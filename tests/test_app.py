@@ -29,3 +29,6 @@ def test_openapi_schema_contains_tools():
     assert "/abusech/threatfox/search" in paths
     assert "/abusech/urlhaus/url" in paths
     assert "/abusech/urlhaus/host" in paths
+    assert "/greynoise/classify" in paths
+    assert "/abuseipdb/check" in paths
+    assert "/crtsh/subdomains" in paths

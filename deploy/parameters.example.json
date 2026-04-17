@@ -11,6 +11,12 @@
   "abuseChAuthKey": {
     "value": ""
   },
+  "greynoiseApiKey": {
+    "value": ""
+  },
+  "abuseIpdbApiKey": {
+    "value": ""
+  },
   "minReplicas": {
     "value": 0
   },

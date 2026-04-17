@@ -33,7 +33,7 @@ One `Deploy to Azure` click → Container Apps (scale-to-zero, < $5/month idle) 
 | `crtsh_subdomains` | [crt.sh](https://crt.sh/) | No | Certificate transparency |
 | `ransomware_live_recent` / `_by_group` / `_by_country` | [ransomware.live](https://www.ransomware.live/) | No | Ransomware victim metadata |
 
-**Currently implemented in v0.2**: KEV + EPSS + ATT&CK (v0.1) plus Abuse.ch Pack (MalwareBazaar, ThreatFox, URLhaus). Remaining tools land in v0.3–v0.6.
+**Currently implemented in v0.3**: KEV + EPSS + ATT&CK (v0.1) · Abuse.ch Pack (v0.2, MalwareBazaar / ThreatFox / URLhaus) · IP & Domain Reputation (v0.3, GreyNoise Community / AbuseIPDB / crt.sh). Remaining tools land in v0.4–v0.6.
 
 ### Optional environment variables
 
@@ -41,6 +41,8 @@ One `Deploy to Azure` click → Container Apps (scale-to-zero, < $5/month idle) 
 |----------|---------|-------|
 | `MCP_SOC_PACK_API_KEY` | All routes | Shared secret for `X-API-Key` header. Leave unset in dev. |
 | `ABUSE_CH_AUTH_KEY` | `/abusech/*` | Free key from <https://auth.abuse.ch/>. Required — abuse.ch rejects anonymous calls with HTTP 401. |
+| `GREYNOISE_API_KEY` | `/greynoise/*` | Free Community key from <https://viz.greynoise.io/signup>. Required for GreyNoise classification. |
+| `ABUSEIPDB_API_KEY` | `/abuseipdb/*` | Free key from <https://www.abuseipdb.com/register> (1000 req/day). Required for AbuseIPDB checks. |
 
 ## Quickstart (local)
 
@@ -102,8 +104,8 @@ See [mcp-client-config/](./mcp-client-config/) for ready-to-use configurations.
 ## Roadmap
 
 - [x] v0.1 Bootstrap — FastAPI + fastmcp scaffold, CISA KEV, EPSS, MITRE ATT&CK, Bicep, Deploy to Azure button
-- [ ] v0.2 Abuse.ch Pack (MalwareBazaar, ThreatFox, URLhaus)
-- [ ] v0.3 IP/Domain Reputation (GreyNoise, AbuseIPDB, crt.sh)
+- [x] v0.2 Abuse.ch Pack (MalwareBazaar, ThreatFox, URLhaus)
+- [x] v0.3 IP/Domain Reputation (GreyNoise, AbuseIPDB, crt.sh)
 - [ ] v0.4 ransomware.live tools
 - [ ] v0.5 Security Copilot integration (plugin manifest + reference `agent.yaml`)
 - [ ] v0.6 Japanese / English README, polish, v1.0 release

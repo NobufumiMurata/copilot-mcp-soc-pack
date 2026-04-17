@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastmcp import FastMCP
 
 from src import __version__
-from src.tools import abusech, attack, epss, kev
+from src.tools import abusech, abuseipdb, attack, crtsh, epss, greynoise, kev
 
 API_KEY_ENV = "MCP_SOC_PACK_API_KEY"
 
@@ -69,6 +69,9 @@ app.include_router(kev.router, dependencies=[Depends(_require_api_key)])
 app.include_router(epss.router, dependencies=[Depends(_require_api_key)])
 app.include_router(attack.router, dependencies=[Depends(_require_api_key)])
 app.include_router(abusech.router, dependencies=[Depends(_require_api_key)])
+app.include_router(greynoise.router, dependencies=[Depends(_require_api_key)])
+app.include_router(abuseipdb.router, dependencies=[Depends(_require_api_key)])
+app.include_router(crtsh.router, dependencies=[Depends(_require_api_key)])
 
 
 # --- MCP server --------------------------------------------------------------
@@ -78,6 +81,9 @@ app.include_router(abusech.router, dependencies=[Depends(_require_api_key)])
 mcp = FastMCP(name="copilot-mcp-soc-pack")
 
 kev.register_mcp_tools(mcp)
+greynoise.register_mcp_tools(mcp)
+abuseipdb.register_mcp_tools(mcp)
+crtsh.register_mcp_tools(mcp)
 epss.register_mcp_tools(mcp)
 abusech.register_mcp_tools(mcp)
 attack.register_mcp_tools(mcp)

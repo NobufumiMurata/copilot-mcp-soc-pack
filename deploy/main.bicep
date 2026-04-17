@@ -26,6 +26,12 @@ param apiKey string = ''
 @description('Free abuse.ch Auth-Key (https://auth.abuse.ch/). Required for the /abusech/* endpoints (MalwareBazaar, ThreatFox, URLhaus). Leave empty to disable those endpoints.')
 @secure()
 param abuseChAuthKey string = ''
+@description('Free GreyNoise Community API key (https://viz.greynoise.io/signup). Required for /greynoise/classify. Leave empty to disable.')
+@secure()
+param greynoiseApiKey string = ''
+@description('Free AbuseIPDB API key (https://www.abuseipdb.com/register). Required for /abuseipdb/check. Leave empty to disable.')
+@secure()
+param abuseIpdbApiKey string = ''
 @description('Minimum number of replicas. Set 0 for scale-to-zero.')
 @minValue(0)
 @maxValue(5)
@@ -91,6 +97,18 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             name: 'abusech-auth-key'
             value: abuseChAuthKey
           }
+        ],
+        empty(greynoiseApiKey) ? [] : [
+          {
+            name: 'greynoise-api-key'
+            value: greynoiseApiKey
+          }
+        ],
+        empty(abuseIpdbApiKey) ? [] : [
+          {
+            name: 'abuseipdb-api-key'
+            value: abuseIpdbApiKey
+          }
         ]
       )
     }
@@ -114,6 +132,18 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
               {
                 name: 'ABUSE_CH_AUTH_KEY'
                 secretRef: 'abusech-auth-key'
+              }
+            ],
+            empty(greynoiseApiKey) ? [] : [
+              {
+                name: 'GREYNOISE_API_KEY'
+                secretRef: 'greynoise-api-key'
+              }
+            ],
+            empty(abuseIpdbApiKey) ? [] : [
+              {
+                name: 'ABUSEIPDB_API_KEY'
+                secretRef: 'abuseipdb-api-key'
               }
             ]
           )
