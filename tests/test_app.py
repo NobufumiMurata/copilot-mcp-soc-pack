@@ -23,3 +23,9 @@ def test_openapi_schema_contains_tools():
     assert "/epss/score" in paths
     assert "/attack/technique" in paths
     assert "/attack/search" in paths
+    assert "/abusech/malwarebazaar/lookup" in paths
+    assert "/abusech/malwarebazaar/recent" in paths
+    assert "/abusech/threatfox/recent" in paths
+    assert "/abusech/threatfox/search" in paths
+    assert "/abusech/urlhaus/url" in paths
+    assert "/abusech/urlhaus/host" in paths

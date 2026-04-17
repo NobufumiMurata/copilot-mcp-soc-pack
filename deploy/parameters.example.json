@@ -8,6 +8,9 @@
   "apiKey": {
     "value": ""
   },
+  "abuseChAuthKey": {
+    "value": ""
+  },
   "minReplicas": {
     "value": 0
   },

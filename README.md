@@ -25,15 +25,22 @@ One `Deploy to Azure` click → Container Apps (scale-to-zero, < $5/month idle) 
 | `kev_lookup` / `kev_search` | [CISA Known Exploited Vulnerabilities](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) | No | Actively exploited CVE catalog |
 | `epss_score` | [FIRST EPSS API](https://www.first.org/epss/api) | No | Exploit prediction scores |
 | `attack_technique` / `attack_search` | [MITRE ATT&CK STIX](https://github.com/mitre/cti) | No | TTP lookup with mitigations |
-| `malwarebazaar_lookup` | [abuse.ch MalwareBazaar](https://bazaar.abuse.ch/) | Optional (Auth-Key for higher limits) | Sample/hash lookup |
-| `threatfox_lookup` | [abuse.ch ThreatFox](https://threatfox.abuse.ch/) | Optional | IOC enrichment |
-| `urlhaus_lookup` | [abuse.ch URLhaus](https://urlhaus.abuse.ch/) | Optional | Malicious URL feed |
+| `malwarebazaar_lookup` / `_recent` | [abuse.ch MalwareBazaar](https://bazaar.abuse.ch/) | Required (free key from [auth.abuse.ch](https://auth.abuse.ch/)) | Sample/hash lookup + recent submissions |
+| `threatfox_recent` / `_search` | [abuse.ch ThreatFox](https://threatfox.abuse.ch/) | Required (same key) | IOC enrichment |
+| `urlhaus_lookup_url` / `_host` | [abuse.ch URLhaus](https://urlhaus.abuse.ch/) | Required (same key) | Malicious URL feed |
 | `greynoise_classify` | [GreyNoise Community](https://www.greynoise.io/) | Free key | Scanner noise vs. targeted |
 | `abuseipdb_check` | [AbuseIPDB](https://www.abuseipdb.com/) | Free key | IP reputation |
 | `crtsh_subdomains` | [crt.sh](https://crt.sh/) | No | Certificate transparency |
 | `ransomware_live_recent` / `_by_group` / `_by_country` | [ransomware.live](https://www.ransomware.live/) | No | Ransomware victim metadata |
 
-**Currently implemented in bootstrap (v0.1)**: `kev_lookup`, `kev_search`, `epss_score`, `attack_technique`. Remaining tools land in v0.2–v0.6.
+**Currently implemented in v0.2**: KEV + EPSS + ATT&CK (v0.1) plus Abuse.ch Pack (MalwareBazaar, ThreatFox, URLhaus). Remaining tools land in v0.3–v0.6.
+
+### Optional environment variables
+
+| Variable | Used by | Notes |
+|----------|---------|-------|
+| `MCP_SOC_PACK_API_KEY` | All routes | Shared secret for `X-API-Key` header. Leave unset in dev. |
+| `ABUSE_CH_AUTH_KEY` | `/abusech/*` | Free key from <https://auth.abuse.ch/>. Required — abuse.ch rejects anonymous calls with HTTP 401. |
 
 ## Quickstart (local)
 

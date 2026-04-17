@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastmcp import FastMCP
 
 from src import __version__
-from src.tools import attack, epss, kev
+from src.tools import abusech, attack, epss, kev
 
 API_KEY_ENV = "MCP_SOC_PACK_API_KEY"
 
@@ -68,6 +68,7 @@ def health() -> dict[str, str]:
 app.include_router(kev.router, dependencies=[Depends(_require_api_key)])
 app.include_router(epss.router, dependencies=[Depends(_require_api_key)])
 app.include_router(attack.router, dependencies=[Depends(_require_api_key)])
+app.include_router(abusech.router, dependencies=[Depends(_require_api_key)])
 
 
 # --- MCP server --------------------------------------------------------------
@@ -78,6 +79,7 @@ mcp = FastMCP(name="copilot-mcp-soc-pack")
 
 kev.register_mcp_tools(mcp)
 epss.register_mcp_tools(mcp)
+abusech.register_mcp_tools(mcp)
 attack.register_mcp_tools(mcp)
 
 app.mount("/mcp", mcp.http_app())

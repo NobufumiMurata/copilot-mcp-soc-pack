@@ -23,7 +23,9 @@ param image string = 'ghcr.io/nobufumimurata/copilot-mcp-soc-pack:latest'
 @description('Shared API key that Security Copilot and MCP clients must send in the X-API-Key header. Leave empty to disable auth (development only).')
 @secure()
 param apiKey string = ''
-
+@description('Free abuse.ch Auth-Key (https://auth.abuse.ch/). Required for the /abusech/* endpoints (MalwareBazaar, ThreatFox, URLhaus). Leave empty to disable those endpoints.')
+@secure()
+param abuseChAuthKey string = ''
 @description('Minimum number of replicas. Set 0 for scale-to-zero.')
 @minValue(0)
 @maxValue(5)
@@ -77,12 +79,20 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
         transport: 'auto'
         allowInsecure: false
       }
-      secrets: empty(apiKey) ? [] : [
-        {
-          name: 'api-key'
-          value: apiKey
-        }
-      ]
+      secrets: concat(
+        empty(apiKey) ? [] : [
+          {
+            name: 'api-key'
+            value: apiKey
+          }
+        ],
+        empty(abuseChAuthKey) ? [] : [
+          {
+            name: 'abusech-auth-key'
+            value: abuseChAuthKey
+          }
+        ]
+      )
     }
     template: {
       containers: [
@@ -93,12 +103,20 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             cpu: json('0.5')
             memory: '1.0Gi'
           }
-          env: empty(apiKey) ? [] : [
-            {
-              name: 'MCP_SOC_PACK_API_KEY'
-              secretRef: 'api-key'
-            }
-          ]
+          env: concat(
+            empty(apiKey) ? [] : [
+              {
+                name: 'MCP_SOC_PACK_API_KEY'
+                secretRef: 'api-key'
+              }
+            ],
+            empty(abuseChAuthKey) ? [] : [
+              {
+                name: 'ABUSE_CH_AUTH_KEY'
+                secretRef: 'abusech-auth-key'
+              }
+            ]
+          )
           probes: [
             {
               type: 'Liveness'
