@@ -1,0 +1,38 @@
+# Security Copilot plugin manifest (OpenAPI)
+#
+# After deploying to Azure (via the "Deploy to Azure" button) you'll have an
+# HTTPS endpoint like https://<name>.<region>.azurecontainerapps.io. The
+# OpenAPI schema is served automatically at `/openapi.json`.
+#
+# To register the plugin:
+#   1. Sign in to Security Copilot as Copilot owner or contributor.
+#   2. Open the Sources panel ("plug" icon) → Custom plugins → Add plugin.
+#   3. Select "Upload plugin file" and choose this YAML file, OR
+#      select "URL" and paste the raw URL of this YAML file from GitHub.
+#   4. When prompted, set the host URL to your Container App FQDN and configure
+#      API key authentication using the `X-API-Key` header.
+#
+# Reference: https://learn.microsoft.com/en-us/copilot/security/custom-plugins
+
+openapi: 3.0.1
+info:
+  title: Copilot MCP SOC Pack
+  description: >
+    Free-API SOC helpers for Microsoft Security Copilot: CISA KEV, FIRST EPSS,
+    MITRE ATT&CK, abuse.ch, GreyNoise, AbuseIPDB, crt.sh, ransomware.live.
+  version: 0.1.0
+servers:
+  # Replace with your Container App FQDN after deployment.
+  - url: https://REPLACE-ME.azurecontainerapps.io
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+security:
+  - ApiKeyAuth: []
+paths: {}
+# The actual path definitions are served dynamically at /openapi.json by the
+# FastAPI app. Security Copilot can consume that URL directly instead of this
+# static file — see the README.

@@ -1,0 +1,58 @@
+[project]
+name = "copilot-mcp-soc-pack"
+version = "0.1.0"
+description = "Community SOC Pack for Microsoft Security Copilot — free-API MCP server and OpenAPI plugin"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Nobufumi Murata" }]
+keywords = ["security-copilot", "mcp", "openapi", "soc", "threat-intelligence"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+]
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "httpx>=0.27",
+    "fastmcp>=2.3",
+    "pydantic>=2.9",
+    "aiocache>=0.12",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.7",
+    "mypy>=1.12",
+    "httpx>=0.27",
+]
+
+[project.urls]
+Homepage = "https://github.com/NobufumiMurata/copilot-mcp-soc-pack"
+Issues = "https://github.com/NobufumiMurata/copilot-mcp-soc-pack/issues"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+# FastAPI idiomatically uses Query()/Depends() in defaults.
+"src/tools/*.py" = ["B008"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

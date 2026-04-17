@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "copilot-mcp-soc-pack": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://REPLACE-ME.azurecontainerapps.io/mcp/",
+        "--header",
+        "X-API-Key:REPLACE-ME"
+      ]
+    }
+  }
+}

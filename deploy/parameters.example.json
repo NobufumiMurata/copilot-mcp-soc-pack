@@ -1,0 +1,17 @@
+{
+  "containerAppName": {
+    "value": "copilot-mcp-soc-pack"
+  },
+  "image": {
+    "value": "ghcr.io/nobufumimurata/copilot-mcp-soc-pack:latest"
+  },
+  "apiKey": {
+    "value": ""
+  },
+  "minReplicas": {
+    "value": 0
+  },
+  "maxReplicas": {
+    "value": 3
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "//": "Save as .vscode/mcp.json in your workspace, or use the GitHub Copilot MCP settings UI.",
+  "servers": {
+    "copilot-mcp-soc-pack": {
+      "type": "http",
+      "url": "https://REPLACE-ME.azurecontainerapps.io/mcp/",
+      "headers": {
+        "X-API-Key": "${input:soc_pack_api_key}"
+      }
+    }
+  },
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "soc_pack_api_key",
+      "description": "API key for copilot-mcp-soc-pack",
+      "password": true
+    }
+  ]
+}
