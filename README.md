@@ -88,11 +88,16 @@ Click the **Deploy to Azure** button above. You'll be prompted for:
 | `apiKey` | Shared secret that Security Copilot will send in the `X-API-Key` header (leave empty = no auth, do not use in production) | generated |
 | `image` | Container image | `ghcr.io/nobufumimurata/copilot-mcp-soc-pack:latest` |
 
-After deployment, copy the Container App FQDN (`https://<name>.<region>.azurecontainerapps.io`) and:
+After deployment, copy the Container App FQDN (`https://<name>.<region>.azurecontainerapps.io`) and follow the step-by-step
+[Security Copilot registration runbook](./docs/security-copilot-registration.md)
+to register the plugin, wire up the `X-API-Key`, and (optionally) upload the
+three reference agents defined in [`sc-plugin/agent.yaml`](./sc-plugin/agent.yaml).
 
-1. In Security Copilot, go to **Sources → Custom → Add plugin**
-2. Choose **API** → paste `https://<fqdn>/openapi.yaml` as the manifest URL
-3. Set authentication to **API Key (header)**, header name `X-API-Key`, value = the `apiKey` you set
+TL;DR:
+
+1. In Security Copilot, go to **Sources -> Custom -> Upload plugin -> OpenAI plugin**.
+2. Paste the raw URL of [`sc-plugin/manifest.yaml`](./sc-plugin/manifest.yaml) (or upload the file). Its `api.url` should already point at the OpenAPI spec served by your Container App at `/openapi.json`.
+3. When prompted, enter the `X-API-Key` value you set during deployment.
 4. Enable the plugin and try a prompt:
 
    > *What CVEs from CISA KEV were added in the last 30 days that have an EPSS score above 0.5?*

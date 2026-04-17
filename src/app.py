@@ -12,9 +12,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
 from fastmcp import FastMCP
 
 from src import __version__
+from src.common.openapi_compat import downgrade_to_3_0_1
 from src.tools import abusech, abuseipdb, attack, crtsh, epss, greynoise, kev, ransomwarelive
 
 API_KEY_ENV = "MCP_SOC_PACK_API_KEY"
@@ -62,6 +64,32 @@ app.add_middleware(
 def health() -> dict[str, str]:
     """Simple liveness probe used by Container Apps and Kubernetes."""
     return {"status": "ok", "version": __version__}
+
+
+# --- OpenAPI 3.0.1 override --------------------------------------------------
+# Microsoft Security Copilot only ingests OpenAPI 3.0 / 3.0.1 specs. FastAPI
+# emits 3.1 by default, so we generate the spec once, downgrade the known
+# incompatibilities (null-anyOf pattern, version string) and cache the result.
+def _custom_openapi() -> dict:
+    if app.openapi_schema:
+        return app.openapi_schema
+    schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+    if not schema.get("components", {}).get("securitySchemes"):
+        schema.setdefault("components", {})["securitySchemes"] = {
+            "ApiKeyAuth": {"type": "apiKey", "in": "header", "name": "X-API-Key"}
+        }
+        schema["security"] = [{"ApiKeyAuth": []}]
+    downgrade_to_3_0_1(schema)
+    app.openapi_schema = schema
+    return schema
+
+
+app.openapi = _custom_openapi  # type: ignore[assignment]
 
 
 # --- Tool routers ------------------------------------------------------------
