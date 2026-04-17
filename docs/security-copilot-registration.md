@@ -56,9 +56,14 @@ If any of the above does not match, fix the deployment before continuing.
      uses the OpenAI `ai-plugin` format).
 5. Provide the manifest. Either option works:
    - **Upload as link**: paste the raw GitHub URL of
-     [`sc-plugin/manifest.yaml`](../sc-plugin/manifest.yaml) and select the
-     file type `YAML`.
-   - **Upload file**: pick the local copy of `sc-plugin/manifest.yaml`.
+     [`sc-plugin/ai-plugin.json`](../sc-plugin/ai-plugin.json) and select the
+     file type `JSON`.
+   - **Upload file**: pick the local copy of `sc-plugin/ai-plugin.json`.
+
+   > Security Copilot's **OpenAI plugin** uploader expects a JSON manifest
+   > (`ai-plugin.json`). The repo also ships a YAML mirror at
+   > `sc-plugin/manifest.yaml` for readability, but use the `.json` file
+   > when registering.
 6. Click **Add**.
 
 Security Copilot will fetch the manifest, follow `api.url` to download the

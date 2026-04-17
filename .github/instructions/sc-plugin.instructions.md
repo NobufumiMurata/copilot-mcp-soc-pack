@@ -6,7 +6,8 @@ applyTo: "sc-plugin/**"
 
 ## ファイル構成
 
-- `sc-plugin/manifest.yaml` — OpenAPI プラグインマニフェスト (SC の Sources → Custom plugins から登録)
+- `sc-plugin/ai-plugin.json` — OpenAI plugin manifest (JSON; this is what SC's *OpenAI plugin* uploader consumes)
+- `sc-plugin/manifest.yaml` — YAML mirror of the above for human readability (keep both in sync)
 - `sc-plugin/agent.yaml` — カスタムエージェント定義 (SC の Build → My agents からアップロード)
 
 ## マニフェストの更新

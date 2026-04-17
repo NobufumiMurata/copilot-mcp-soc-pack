@@ -104,7 +104,7 @@ three reference agents defined in [`sc-plugin/agent.yaml`](./sc-plugin/agent.yam
 TL;DR:
 
 1. In Security Copilot, go to **Sources -> Custom -> Upload plugin -> OpenAI plugin**.
-2. Paste the raw URL of [`sc-plugin/manifest.yaml`](./sc-plugin/manifest.yaml) (or upload the file). Its `api.url` should already point at the OpenAPI spec served by your Container App at `/openapi.json`.
+2. Paste the raw URL of [`sc-plugin/ai-plugin.json`](./sc-plugin/ai-plugin.json) (or upload the file). Its `api.url` should already point at the OpenAPI spec served by your Container App at `/openapi.json`. (A YAML mirror is kept at [`sc-plugin/manifest.yaml`](./sc-plugin/manifest.yaml) for human readability.)
 3. When prompted, enter the `X-API-Key` value you set during deployment.
 4. Enable the plugin and try a prompt:
 
