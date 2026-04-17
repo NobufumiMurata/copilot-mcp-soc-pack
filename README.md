@@ -31,9 +31,9 @@ One `Deploy to Azure` click → Container Apps (scale-to-zero, < $5/month idle) 
 | `greynoise_classify` | [GreyNoise Community](https://www.greynoise.io/) | Free key | Scanner noise vs. targeted |
 | `abuseipdb_check` | [AbuseIPDB](https://www.abuseipdb.com/) | Free key | IP reputation |
 | `crtsh_subdomains` | [crt.sh](https://crt.sh/) | No | Certificate transparency |
-| `ransomware_live_recent` / `_by_group` / `_by_country` | [ransomware.live](https://www.ransomware.live/) | No | Ransomware victim metadata |
+| `ransomware_live_recent` / `_by_group` / `_by_country` / `_groups` | [ransomware.live](https://www.ransomware.live/) v2 | No | Ransomware victim metadata |
 
-**Currently implemented in v0.3**: KEV + EPSS + ATT&CK (v0.1) · Abuse.ch Pack (v0.2, MalwareBazaar / ThreatFox / URLhaus) · IP & Domain Reputation (v0.3, GreyNoise Community / AbuseIPDB / crt.sh). Remaining tools land in v0.4–v0.6.
+**Currently implemented in v0.4**: KEV + EPSS + ATT&CK (v0.1) · Abuse.ch Pack (v0.2) · IP & Domain Reputation (v0.3, GreyNoise / AbuseIPDB / crt.sh) · ransomware.live (v0.4, recent/by_group/by_country/groups). Remaining tools land in v0.5–v0.6.
 
 ### Optional environment variables
 
@@ -106,7 +106,7 @@ See [mcp-client-config/](./mcp-client-config/) for ready-to-use configurations.
 - [x] v0.1 Bootstrap — FastAPI + fastmcp scaffold, CISA KEV, EPSS, MITRE ATT&CK, Bicep, Deploy to Azure button
 - [x] v0.2 Abuse.ch Pack (MalwareBazaar, ThreatFox, URLhaus)
 - [x] v0.3 IP/Domain Reputation (GreyNoise, AbuseIPDB, crt.sh)
-- [ ] v0.4 ransomware.live tools
+- [x] v0.4 ransomware.live tools
 - [ ] v0.5 Security Copilot integration (plugin manifest + reference `agent.yaml`)
 - [ ] v0.6 Japanese / English README, polish, v1.0 release
 

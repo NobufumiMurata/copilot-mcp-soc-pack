@@ -32,3 +32,7 @@ def test_openapi_schema_contains_tools():
     assert "/greynoise/classify" in paths
     assert "/abuseipdb/check" in paths
     assert "/crtsh/subdomains" in paths
+    assert "/ransomware/recent" in paths
+    assert "/ransomware/by_group" in paths
+    assert "/ransomware/by_country" in paths
+    assert "/ransomware/groups" in paths
