@@ -80,8 +80,16 @@ class UrlhausEntry(BaseModel):
 # --- Shared helper ----------------------------------------------------------
 
 
-async def _post(url: str, data: dict[str, Any]) -> dict[str, Any]:
-    """POST form data to an Abuse.ch endpoint and return parsed JSON."""
+async def _post(
+    url: str, data: dict[str, Any], *, as_json: bool = False
+) -> dict[str, Any]:
+    """POST to an Abuse.ch endpoint and return parsed JSON.
+
+    MalwareBazaar and URLhaus accept ``application/x-www-form-urlencoded``,
+    but the ThreatFox v1 API expects a JSON body (per the official curl
+    examples at https://threatfox.abuse.ch/api/). Pass ``as_json=True`` for
+    ThreatFox calls.
+    """
     key = os.environ.get(ABUSE_CH_AUTH_KEY_ENV)
     if not key:
         raise HTTPException(
@@ -92,13 +100,17 @@ async def _post(url: str, data: dict[str, Any]) -> dict[str, Any]:
             ),
         )
 
-    cache_key = f"{url}|{sorted(data.items())}"
+    cache_key = f"{url}|{'json' if as_json else 'form'}|{sorted(data.items())}"
     cached = await _cache.get(cache_key)
     if cached is not None:
         return cached
 
     client = await get_client()
-    response = await client.post(url, data=data, headers={"Auth-Key": key})
+    headers = {"Auth-Key": key}
+    if as_json:
+        response = await client.post(url, json=data, headers=headers)
+    else:
+        response = await client.post(url, data=data, headers=headers)
     if response.status_code == 401:
         raise HTTPException(
             status_code=401,
@@ -106,6 +118,13 @@ async def _post(url: str, data: dict[str, Any]) -> dict[str, Any]:
         )
     response.raise_for_status()
     payload = response.json()
+    status = payload.get("query_status")
+    if status not in (None, "ok", "no_results", "no_result"):
+        # Surface upstream errors instead of silently returning [] downstream.
+        raise HTTPException(
+            status_code=502,
+            detail=f"abuse.ch returned query_status={status!r} for {url}",
+        )
     await _cache.set(cache_key, payload)
     return payload
 
@@ -175,7 +194,11 @@ async def _mb_recent(selector: str, limit: int) -> list[MalwareBazaarSample]:
 
 
 async def _tf_recent(days: int) -> list[ThreatFoxIOC]:
-    payload = await _post(THREATFOX_URL, {"query": "get_iocs", "days": max(1, min(days, 7))})
+    payload = await _post(
+        THREATFOX_URL,
+        {"query": "get_iocs", "days": max(1, min(days, 7))},
+        as_json=True,
+    )
     if payload.get("query_status") != "ok":
         return []
     return [
@@ -197,7 +220,11 @@ async def _tf_recent(days: int) -> list[ThreatFoxIOC]:
 
 
 async def _tf_search_ioc(ioc: str) -> list[ThreatFoxIOC]:
-    payload = await _post(THREATFOX_URL, {"query": "search_ioc", "search_term": ioc.strip()})
+    payload = await _post(
+        THREATFOX_URL,
+        {"query": "search_ioc", "search_term": ioc.strip()},
+        as_json=True,
+    )
     if payload.get("query_status") != "ok":
         return []
     return [
