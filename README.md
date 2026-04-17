@@ -20,18 +20,26 @@ One `Deploy to Azure` click → Container Apps (scale-to-zero, < $5/month idle) 
 
 ## What's inside (target v1.0)
 
-| Tool | Source | API Key? | Scope |
-|------|--------|----------|-------|
-| `kev_lookup` / `kev_search` | [CISA Known Exploited Vulnerabilities](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) | No | Actively exploited CVE catalog |
-| `epss_score` | [FIRST EPSS API](https://www.first.org/epss/api) | No | Exploit prediction scores |
-| `attack_technique` / `attack_search` | [MITRE ATT&CK STIX](https://github.com/mitre/cti) | No | TTP lookup with mitigations |
-| `malwarebazaar_lookup` / `_recent` | [abuse.ch MalwareBazaar](https://bazaar.abuse.ch/) | Required (free key from [auth.abuse.ch](https://auth.abuse.ch/)) | Sample/hash lookup + recent submissions |
-| `threatfox_recent` / `_search` | [abuse.ch ThreatFox](https://threatfox.abuse.ch/) | Required (same key) | IOC enrichment |
-| `urlhaus_lookup_url` / `_host` | [abuse.ch URLhaus](https://urlhaus.abuse.ch/) | Required (same key) | Malicious URL feed |
-| `greynoise_classify` | [GreyNoise Community](https://www.greynoise.io/) | Free key | Scanner noise vs. targeted |
-| `abuseipdb_check` | [AbuseIPDB](https://www.abuseipdb.com/) | Free key | IP reputation |
-| `crtsh_subdomains` | [crt.sh](https://crt.sh/) | No | Certificate transparency |
-| `ransomware_live_recent` / `_by_group` / `_by_country` / `_groups` | [ransomware.live](https://www.ransomware.live/) v2 | No | Ransomware victim metadata |
+| Tool | Source | API Key? | Scope | Also available as an official Security Copilot plugin? |
+|------|--------|----------|-------|---------------------------------------------------------|
+| `kev_lookup` / `kev_search` | [CISA Known Exploited Vulnerabilities](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) | No | Actively exploited CVE catalog | No |
+| `epss_score` | [FIRST EPSS API](https://www.first.org/epss/api) | No | Exploit prediction scores | No |
+| `attack_technique` / `attack_search` | [MITRE ATT&CK STIX](https://github.com/mitre/cti) | No | TTP lookup with mitigations | No |
+| `malwarebazaar_lookup` / `_recent` | [abuse.ch MalwareBazaar](https://bazaar.abuse.ch/) | Required (free key from [auth.abuse.ch](https://auth.abuse.ch/)) | Sample/hash lookup + recent submissions | No |
+| `threatfox_recent` / `_search` | [abuse.ch ThreatFox](https://threatfox.abuse.ch/) | Required (same key) | IOC enrichment | No |
+| `urlhaus_lookup_url` / `_host` | [abuse.ch URLhaus](https://urlhaus.abuse.ch/) | Required (same key) | Malicious URL feed | No |
+| `greynoise_classify` | [GreyNoise Community](https://www.greynoise.io/) | Free key | Scanner noise vs. targeted | **Yes** — [`GreyNoiseCommunity` (Published)](https://github.com/Azure/Security-Copilot/tree/main/Plugins/Published%20Plugins/GreyNoiseCommunity) |
+| `abuseipdb_check` | [AbuseIPDB](https://www.abuseipdb.com/) | Free key | IP reputation | **Yes** — `AbuseIPDB (Preview)` built into Security Copilot Sources |
+| `crtsh_subdomains` | [crt.sh](https://crt.sh/) | No | Certificate transparency | No |
+| `ransomware_live_recent` / `_by_group` / `_by_country` / `_groups` | [ransomware.live](https://www.ransomware.live/) v2 | No | Ransomware victim metadata | No |
+
+> **Why implement GreyNoise and AbuseIPDB anyway?** Microsoft ships official
+> plugins for both. Keeping the implementations here gives SOC teams a single
+> OSS bundle that works outside Security Copilot (VS Code / Claude Desktop via
+> MCP, or plain `curl`) without mixing vendor-managed plugins and
+> customer-managed ones. If you only use Security Copilot, feel free to
+> disable the `greynoise_classify` and `abuseipdb_check` tools in your
+> plugin configuration and use the first-party plugins instead.
 
 **Currently implemented in v0.4**: KEV + EPSS + ATT&CK (v0.1) · Abuse.ch Pack (v0.2) · IP & Domain Reputation (v0.3, GreyNoise / AbuseIPDB / crt.sh) · ransomware.live (v0.4, recent/by_group/by_country/groups). Remaining tools land in v0.5–v0.6.
 
@@ -41,8 +49,8 @@ One `Deploy to Azure` click → Container Apps (scale-to-zero, < $5/month idle) 
 |----------|---------|-------|
 | `MCP_SOC_PACK_API_KEY` | All routes | Shared secret for `X-API-Key` header. Leave unset in dev. |
 | `ABUSE_CH_AUTH_KEY` | `/abusech/*` | Free key from <https://auth.abuse.ch/>. Required — abuse.ch rejects anonymous calls with HTTP 401. |
-| `GREYNOISE_API_KEY` | `/greynoise/*` | Free Community key from <https://viz.greynoise.io/signup>. Required for GreyNoise classification. |
-| `ABUSEIPDB_API_KEY` | `/abuseipdb/*` | Free key from <https://www.abuseipdb.com/register> (1000 req/day). Required for AbuseIPDB checks. |
+| `GREYNOISE_API_KEY` | `/greynoise/*` | Free Community key from <https://viz.greynoise.io/signup> → *Account → API Key*. Required for GreyNoise classification. |
+| `ABUSEIPDB_API_KEY` | `/abuseipdb/*` | Free key from <https://www.abuseipdb.com/register> → *API → Create Key* (1000 req/day). Required for AbuseIPDB checks. |
 
 ## Quickstart (local)
 
