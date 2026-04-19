@@ -52,6 +52,45 @@ One `Deploy to Azure` click → Container Apps (scale-to-zero, < $5/month idle) 
 | `GREYNOISE_API_KEY` | `/greynoise/*` | Free Community key from <https://viz.greynoise.io/signup> → *Account → API Key*. Required for GreyNoise classification. |
 | `ABUSEIPDB_API_KEY` | `/abuseipdb/*` | Free key from <https://www.abuseipdb.com/register> → *API → Create Key* (1000 req/day). Required for AbuseIPDB checks. |
 
+## Architecture
+
+```mermaid
+flowchart LR
+    User([SOC analyst])
+    SC[Microsoft Security Copilot]
+    VSC[VS Code / Claude Desktop<br/>MCP client]
+
+    subgraph Azure["Azure Container Apps (scale-to-zero)"]
+        App["copilot-mcp-soc-pack<br/>FastAPI + FastMCP<br/>X-API-Key auth"]
+    end
+
+    subgraph Upstream["Free / freemium upstream APIs"]
+        KEV[CISA KEV]
+        EPSS[FIRST EPSS]
+        ATTACK[MITRE ATT&CK]
+        ABUSECH[abuse.ch<br/>MalwareBazaar / ThreatFox / URLhaus]
+        GN[GreyNoise Community]
+        AIPDB[AbuseIPDB]
+        CRTSH[crt.sh]
+        RWLIVE[ransomware.live]
+    end
+
+    User -->|prompt| SC
+    User -->|chat / tool call| VSC
+    SC -->|OpenAPI 3.0.1<br/>HTTPS + X-API-Key| App
+    VSC -->|MCP over SSE| App
+    App --> KEV
+    App --> EPSS
+    App --> ATTACK
+    App --> ABUSECH
+    App --> GN
+    App --> AIPDB
+    App --> CRTSH
+    App --> RWLIVE
+```
+
+A single container exposes the same tools two ways: as a Security Copilot custom plugin (REST + OpenAPI) and as an MCP server (SSE) for desktop clients. Upstream API keys are held as Container App secrets and never leave the container.
+
 ## Quickstart (local)
 
 ```bash
@@ -143,7 +182,7 @@ See [mcp-client-config/](./mcp-client-config/) for ready-to-use configurations.
 
 ## Contributing
 
-PRs welcome. Please keep the free-API, no-scraping, no-raw-leak-data policy intact. See [CONTRIBUTING](./CONTRIBUTING.md) (TBD).
+PRs welcome. Please keep the free-API, no-scraping, no-raw-leak-data policy intact. See [CONTRIBUTING](./CONTRIBUTING.md) for the project policy, tool-module template, coding style, and release process. A PR template ships under [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMPLATE.md).
 
 ## License
 
