@@ -47,7 +47,7 @@ $probes = @(
     @{ Name = 'health (no auth)';            Path = '/health';                                                  Auth = $false; Expect = 'ok' }
     @{ Name = 'openapi.json (no auth)';      Path = '/openapi.json';                                            Auth = $false; Expect = '3.0.1' }
     @{ Name = 'kev_lookup CVE-2024-3400';    Path = '/kev/lookup?cve_id=CVE-2024-3400';                         Auth = $true  }
-    @{ Name = 'epss_score CVE-2024-3400';    Path = '/epss/score?cve_id=CVE-2024-3400';                         Auth = $true  }
+    @{ Name = 'epss_score CVE-2024-3400';    Path = '/epss/score?cve=CVE-2024-3400';                            Auth = $true  }
     @{ Name = 'attack T1566';                Path = '/attack/technique?technique_id=T1566';                     Auth = $true  }
     @{ Name = 'crtsh example.com';           Path = '/crtsh/subdomains?domain=example.com';                     Auth = $true  }
     @{ Name = 'ransomware_live recent';      Path = '/ransomware/recent?limit=5';                               Auth = $true  }
