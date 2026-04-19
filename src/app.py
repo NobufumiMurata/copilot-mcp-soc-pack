@@ -23,15 +23,25 @@ API_KEY_ENV = "MCP_SOC_PACK_API_KEY"
 
 
 def _require_api_key(request: Request) -> None:
-    """Optional API-key gate. If env var unset, auth is disabled (dev mode)."""
+    """Optional API-key gate. If env var unset, auth is disabled (dev mode).
+
+    Accepts either ``X-API-Key: <key>`` or ``Authorization: Bearer <key>``.
+    The Bearer form is required because Microsoft Security Copilot's OpenAI
+    plugin loader only supports ``authorization_type: bearer`` for custom
+    plugins (see https://learn.microsoft.com/en-us/copilot/security/custom-plugins).
+    """
     expected = os.environ.get(API_KEY_ENV)
     if not expected:
         return
     provided = request.headers.get("X-API-Key")
+    if not provided:
+        auth = request.headers.get("Authorization", "")
+        if auth.lower().startswith("bearer "):
+            provided = auth.split(" ", 1)[1].strip()
     if provided != expected:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or missing X-API-Key header.",
+            detail="Invalid or missing API key (X-API-Key or Authorization: Bearer).",
         )
 
 
@@ -81,9 +91,9 @@ def _custom_openapi() -> dict:
     )
     if not schema.get("components", {}).get("securitySchemes"):
         schema.setdefault("components", {})["securitySchemes"] = {
-            "ApiKeyAuth": {"type": "apiKey", "in": "header", "name": "X-API-Key"}
+            "BearerAuth": {"type": "http", "scheme": "bearer"}
         }
-        schema["security"] = [{"ApiKeyAuth": []}]
+        schema["security"] = [{"BearerAuth": []}]
     downgrade_to_3_0_1(schema)
     app.openapi_schema = schema
     return schema

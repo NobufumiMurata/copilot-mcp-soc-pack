@@ -53,10 +53,10 @@ def test_openapi_is_3_0_1_for_security_copilot():
     assert "anyOf" not in vendor
 
 
-def test_openapi_has_apikey_security_scheme():
+def test_openapi_has_bearer_security_scheme():
     client = TestClient(app)
     schema = client.get("/openapi.json").json()
     schemes = schema["components"]["securitySchemes"]
-    assert schemes["ApiKeyAuth"]["type"] == "apiKey"
-    assert schemes["ApiKeyAuth"]["in"] == "header"
-    assert schemes["ApiKeyAuth"]["name"] == "X-API-Key"
+    assert schemes["BearerAuth"]["type"] == "http"
+    assert schemes["BearerAuth"]["scheme"] == "bearer"
+    assert schema["security"] == [{"BearerAuth": []}]

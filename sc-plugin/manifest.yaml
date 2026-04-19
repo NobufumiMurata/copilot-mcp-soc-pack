@@ -55,7 +55,11 @@ api:
   url: https://copilot-mcp-soc-pack.salmonsea-6e7f9e16.japaneast.azurecontainerapps.io/openapi.json
 
 auth:
-  type: none
+  # Security Copilot's OpenAI plugin loader only supports
+  # authorization_type: bearer (per Microsoft Learn). The deployed app
+  # accepts the same shared secret via Authorization: Bearer <key>.
+  type: user_http
+  authorization_type: bearer
 
 logo_url: https://raw.githubusercontent.com/NobufumiMurata/copilot-mcp-soc-pack/master/.github/assets/logo.png
 contact_email: soc-pack@users.noreply.github.com
