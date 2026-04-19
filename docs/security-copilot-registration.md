@@ -92,17 +92,24 @@ Is CVE-2024-3400 in the CISA KEV catalog, and what is its EPSS score?
 Expected behaviour:
 - Security Copilot calls `kev_lookup` and `epss_score` from the plugin.
 - The reply cites CISA KEV (Palo Alto Networks PAN-OS) and an EPSS number.
-- The "Sources used" tray on the right shows
-  **Copilot MCP SOC Pack -> kev_lookup / epss_score**.
+- The session header shows **Chose Copilot MCP SOC Pack** with a green
+  check, followed by *Processed your request* and *Prepared your response*.
+
+> **Cold-start note**: the Container App ships with `minReplicas: 0`
+> (scale-to-zero, ~$0/month idle). The first prompt after a quiet period
+> can take 10–25 seconds while the replica wakes up. Subsequent prompts
+> respond in 1–3 seconds. If you want guaranteed sub-second responses,
+> set `--min-replicas 1` (≈ $15/month).
 
 If instead you see a skill-call error, open the prompt's execution trace
 and look at the raw HTTP response; the most common failures are:
 
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
-| 401 Unauthorized on every skill | Wrong API key entered during setup | Sources -> Custom -> gear icon -> re-enter `X-API-Key` |
+| "Your role doesn't have access to that information" | API key not configured during plugin setup | Sources -> Custom -> gear icon -> re-enter `X-API-Key` |
+| Plugin upload times out (~20s) | First call hit a cold replica | Warm with `curl https://<fqdn>/health` then re-upload |
 | 503 Service Unavailable on abuse.ch / GreyNoise / AbuseIPDB skills | External API key secret not set in Container App | Add the secret via `az containerapp secret set` and update the env var |
-| "The plugin couldn't be loaded" at upload time | OpenAPI spec is not 3.0 / 3.0.1 | Redeploy from `master`; `src/common/openapi_compat.py` forces 3.0.1 |
+| "The plugin couldn't be loaded" / "Unsupported auth type" | Uploaded the OpenAI-format `ai-plugin.json` instead of the native `manifest.yaml` | Re-upload using **Security Copilot plugin** type with `sc-plugin/manifest.yaml` |
 
 ## 5. Upload the reference agents (optional)
 

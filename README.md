@@ -7,7 +7,7 @@
 [![Build](https://github.com/NobufumiMurata/copilot-mcp-soc-pack/actions/workflows/build-push.yml/badge.svg)](https://github.com/NobufumiMurata/copilot-mcp-soc-pack/actions/workflows/build-push.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-> **Status**: v0.1 (bootstrap). See [ROADMAP](#roadmap).
+> **Status**: v0.4 (production-ready). 8 tool groups live across REST + MCP, validated end-to-end against Microsoft Security Copilot. See [ROADMAP](#roadmap).
 
 ## Why this exists
 
@@ -119,9 +119,9 @@ See [mcp-client-config/](./mcp-client-config/) for ready-to-use configurations.
 - [x] v0.1 Bootstrap — FastAPI + fastmcp scaffold, CISA KEV, EPSS, MITRE ATT&CK, Bicep, Deploy to Azure button
 - [x] v0.2 Abuse.ch Pack (MalwareBazaar, ThreatFox, URLhaus)
 - [x] v0.3 IP/Domain Reputation (GreyNoise, AbuseIPDB, crt.sh)
-- [x] v0.4 ransomware.live tools
-- [ ] v0.5 Security Copilot integration (plugin manifest + reference `agent.yaml`)
-- [ ] v0.6 Japanese / English README, polish, v1.0 release
+- [x] v0.4 ransomware.live tools + Security Copilot integration (native manifest, OpenAPI 3.0.1 downgrade, reference `agent.yaml`)
+- [ ] v0.5 Promptbook samples, additional ATT&CK enrichment, structured eval harness
+- [ ] v1.0 Bilingual README polish, hardening, public release
 
 ## Contributing
 
