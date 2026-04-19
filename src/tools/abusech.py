@@ -290,6 +290,13 @@ async def _uh_lookup_host(host: str) -> list[UrlhausEntry]:
     "/malwarebazaar/lookup",
     response_model=list[MalwareBazaarSample],
     summary="Look up a sample on MalwareBazaar by SHA256/SHA1/MD5",
+    description=(
+        "Look up a malware sample on abuse.ch MalwareBazaar by hash.\n\n"
+        "#ExamplePrompts\n"
+        "- Look up hash 094fd325049b8a9cf6d3e5ef2a6d4cc6 on MalwareBazaar.\n"
+        "- Has MalwareBazaar seen the SHA256 abc123...?\n"
+        "- Show me MalwareBazaar metadata for this file hash."
+    ),
 )
 async def mb_lookup_endpoint(
     hash_value: str = Query(..., alias="hash", min_length=32, max_length=64),
@@ -301,6 +308,13 @@ async def mb_lookup_endpoint(
     "/malwarebazaar/recent",
     response_model=list[MalwareBazaarSample],
     summary="List the latest samples submitted to MalwareBazaar",
+    description=(
+        "Return the latest samples submitted to abuse.ch MalwareBazaar.\n\n"
+        "#ExamplePrompts\n"
+        "- Show recent malware samples from MalwareBazaar.\n"
+        "- What are the latest 25 samples on MalwareBazaar?\n"
+        "- Brief me on new malware seen by abuse.ch in the last hour."
+    ),
 )
 async def mb_recent_endpoint(
     window: Literal["100", "time"] = Query(
@@ -315,6 +329,13 @@ async def mb_recent_endpoint(
     "/threatfox/recent",
     response_model=list[ThreatFoxIOC],
     summary="Fetch recent IOCs from ThreatFox",
+    description=(
+        "Return recent indicators of compromise from abuse.ch ThreatFox.\n\n"
+        "#ExamplePrompts\n"
+        "- Show recent ThreatFox IOCs from the last 3 days.\n"
+        "- What new IOCs has ThreatFox published this week?\n"
+        "- Pull the latest abuse.ch ThreatFox indicators."
+    ),
 )
 async def tf_recent_endpoint(
     days: int = Query(3, ge=1, le=7, description="Look-back window (max 7 days).")
@@ -326,7 +347,13 @@ async def tf_recent_endpoint(
     "/threatfox/search",
     response_model=list[ThreatFoxIOC],
     summary="Search ThreatFox for an IOC",
-    description="Search ThreatFox for an IP address, domain, URL or file hash.",
+    description=(
+        "Search ThreatFox for an IP address, domain, URL or file hash.\n\n"
+        "#ExamplePrompts\n"
+        "- Search ThreatFox for the IOC 1.2.3.4.\n"
+        "- Does ThreatFox have any indicators for evil.example.com?\n"
+        "- Look up this hash in abuse.ch ThreatFox."
+    ),
 )
 async def tf_search_endpoint(
     ioc: str = Query(..., min_length=3, examples=["1.2.3.4"]),
@@ -338,6 +365,13 @@ async def tf_search_endpoint(
     "/urlhaus/url",
     response_model=UrlhausEntry | None,
     summary="Look up a URL on URLhaus",
+    description=(
+        "Look up a single URL on abuse.ch URLhaus.\n\n"
+        "#ExamplePrompts\n"
+        "- Is http://example.com/malware.exe known to URLhaus?\n"
+        "- Check this URL against abuse.ch URLhaus.\n"
+        "- What does URLhaus say about this download link?"
+    ),
 )
 async def uh_url_endpoint(
     url: str = Query(..., examples=["http://example.com/malware.exe"])
@@ -349,6 +383,13 @@ async def uh_url_endpoint(
     "/urlhaus/host",
     response_model=list[UrlhausEntry],
     summary="Look up all URLhaus entries associated with a host (IP or domain)",
+    description=(
+        "Return every URLhaus entry associated with a host (IP or domain).\n\n"
+        "#ExamplePrompts\n"
+        "- List URLhaus entries for the host evil.example.com.\n"
+        "- What malware URLs has abuse.ch seen on 1.2.3.4?\n"
+        "- Show me every URLhaus record for this domain."
+    ),
 )
 async def uh_host_endpoint(
     host: str = Query(..., min_length=3, examples=["example.com"])

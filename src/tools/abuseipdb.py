@@ -100,7 +100,11 @@ async def _check(ip: str, max_age_in_days: int) -> AbuseIPDBCheck:
     summary="Check an IP reputation via AbuseIPDB",
     description=(
         "Returns AbuseIPDB v2 check results: abuseConfidenceScore (0-100), "
-        "country, ISP, usage type, number of reports and last report timestamp."
+        "country, ISP, usage type, number of reports and last report timestamp.\n\n"
+        "#ExamplePrompts\n"
+        "- What is the AbuseIPDB reputation of 1.2.3.4?\n"
+        "- Is 8.8.8.8 reported as malicious on AbuseIPDB?\n"
+        "- Show me the abuse confidence score and report count for 45.155.205.233."
     ),
 )
 async def abuseipdb_check_endpoint(

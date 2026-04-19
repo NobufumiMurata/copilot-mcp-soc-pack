@@ -123,7 +123,11 @@ async def _subdomains(domain: str) -> CrtshSubdomainsResult:
     summary="Enumerate subdomains via crt.sh certificate transparency",
     description=(
         "Queries crt.sh for all certificates issued for ``%.<domain>`` and returns "
-        "the unique, sorted subdomain set. Capped at 500 entries."
+        "the unique, sorted subdomain set. Capped at 500 entries.\n\n"
+        "#ExamplePrompts\n"
+        "- Enumerate subdomains of example.com from CT logs.\n"
+        "- What subdomains has crt.sh seen for contoso.com?\n"
+        "- List certificate transparency subdomains for github.io."
     ),
 )
 async def crtsh_subdomains_endpoint(

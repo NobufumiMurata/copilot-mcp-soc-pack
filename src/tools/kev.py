@@ -90,7 +90,11 @@ async def _kev_search(
     summary="Look up a single CVE in the CISA KEV catalog",
     description=(
         "Returns the CISA Known Exploited Vulnerabilities entry for a CVE, or null "
-        "if the CVE is not present in the catalog."
+        "if the CVE is not present in the catalog.\n\n"
+        "#ExamplePrompts\n"
+        "- Is CVE-2024-3400 in the CISA KEV catalog?\n"
+        "- Has CVE-2023-23397 been exploited in the wild?\n"
+        "- Tell me everything CISA knows about CVE-2021-44228."
     ),
 )
 async def kev_lookup_endpoint(
@@ -105,7 +109,11 @@ async def kev_lookup_endpoint(
     summary="Search the CISA KEV catalog",
     description=(
         "Filter the CISA Known Exploited Vulnerabilities catalog by recency, vendor, "
-        "and known ransomware usage."
+        "and known ransomware usage.\n\n"
+        "#ExamplePrompts\n"
+        "- Show CISA KEV entries added in the last 30 days.\n"
+        "- List Microsoft vulnerabilities in the KEV catalog.\n"
+        "- Which KEV vulnerabilities are known to be used in ransomware campaigns?"
     ),
 )
 async def kev_search_endpoint(

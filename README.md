@@ -101,6 +101,24 @@ After deployment, copy the Container App FQDN (`https://<name>.<region>.azurecon
 to register the plugin, wire up the `X-API-Key`, and (optionally) upload the
 three reference agents defined in [`sc-plugin/agent.yaml`](./sc-plugin/agent.yaml).
 
+### Verify the deployment
+
+`/health` and `/openapi.json` are intentionally **un-authenticated** so they
+can back Container Apps liveness probes, uptime monitors, and Security
+Copilot's manifest fetch without sharing the API key. Every other route is
+gated by the `X-API-Key` header.
+
+A repeatable end-to-end smoke test is shipped at [`scripts/smoke.ps1`](./scripts/smoke.ps1):
+
+```powershell
+$env:MCP_API_KEY = az containerapp secret show -g <rg> -n <app> --secret-name api-key --query value -o tsv
+./scripts/smoke.ps1 -Fqdn <name>.<region>.azurecontainerapps.io
+```
+
+It walks 11 representative endpoints, prints a pass/skip/fail table, and
+automatically marks abuse.ch / GreyNoise / AbuseIPDB as `SKIP` when the
+upstream key is not configured.
+
 TL;DR:
 
 1. In Security Copilot, go to **Sources -> Custom -> Upload plugin -> Security Copilot plugin** (not "OpenAI plugin" — SC's OpenAI loader does not support shared-secret auth yet).

@@ -64,7 +64,11 @@ async def _epss_score(cve_ids: list[str]) -> list[EpssScore]:
     summary="Get EPSS scores for one or more CVEs",
     description=(
         "Returns EPSS (Exploit Prediction Scoring System) scores and percentiles "
-        "from FIRST for the supplied CVE IDs."
+        "from FIRST for the supplied CVE IDs.\n\n"
+        "#ExamplePrompts\n"
+        "- What is the EPSS score for CVE-2024-3400?\n"
+        "- Compare the EPSS scores of CVE-2024-3400 and CVE-2023-23397.\n"
+        "- Is CVE-2021-44228 likely to be exploited in the next 30 days?"
     ),
 )
 async def epss_score_endpoint(

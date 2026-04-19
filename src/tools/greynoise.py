@@ -96,7 +96,11 @@ async def _classify(ip: str) -> GreyNoiseClassification:
     description=(
         "Returns GreyNoise Community classification for an IPv4: whether it is "
         "internet-scan noise, a known-benign service (RIOT), and a human-readable "
-        "name and link when available."
+        "name and link when available.\n\n"
+        "#ExamplePrompts\n"
+        "- Is 8.8.8.8 a known benign service on GreyNoise?\n"
+        "- Classify 45.155.205.233 with GreyNoise Community.\n"
+        "- Is the IP 192.0.2.1 internet-scan noise?"
     ),
 )
 async def greynoise_classify_endpoint(

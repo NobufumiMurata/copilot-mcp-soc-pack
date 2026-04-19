@@ -171,7 +171,11 @@ async def _groups(limit: int) -> list[RansomwareGroup]:
     summary="Recently disclosed ransomware victims (ransomware.live)",
     description=(
         "Returns the latest victims published on ransomware group leak sites, "
-        "aggregated by ransomware.live. Metadata only."
+        "aggregated by ransomware.live. Metadata only.\n\n"
+        "#ExamplePrompts\n"
+        "- Show recently disclosed ransomware victims.\n"
+        "- List the latest 50 ransomware leak-site victims.\n"
+        "- Brief me on this week's ransomware activity."
     ),
 )
 async def ransomware_recent_endpoint(
@@ -184,6 +188,13 @@ async def ransomware_recent_endpoint(
     "/by_group",
     response_model=list[RansomwareVictim],
     summary="Victims claimed by a specific ransomware group",
+    description=(
+        "Returns leak-site victims attributed to a single ransomware group.\n\n"
+        "#ExamplePrompts\n"
+        "- List victims claimed by LockBit3.\n"
+        "- Show recent victims of the BlackCat ransomware group.\n"
+        "- Which organizations did Cl0p list on their leak site?"
+    ),
 )
 async def ransomware_by_group_endpoint(
     group: str = Query(..., min_length=2, examples=["lockbit3"]),
@@ -196,6 +207,14 @@ async def ransomware_by_group_endpoint(
     "/by_country",
     response_model=list[RansomwareVictim],
     summary="Ransomware victims in a specific country (ISO-3166-1 alpha-2)",
+    description=(
+        "Returns leak-site victims located in the specified country (ISO 3166-1 "
+        "alpha-2 code).\n\n"
+        "#ExamplePrompts\n"
+        "- List ransomware victims in Japan.\n"
+        "- Show ransomware victims in the United States this month.\n"
+        "- Any ransomware victims in DE recently?"
+    ),
 )
 async def ransomware_by_country_endpoint(
     country: str = Query(..., min_length=2, max_length=2, examples=["JP"]),
@@ -210,7 +229,11 @@ async def ransomware_by_country_endpoint(
     summary="Directory of tracked ransomware groups",
     description=(
         "Returns a lightweight summary (name, altname, description, first seen, "
-        "victim count) for each ransomware group tracked by ransomware.live."
+        "victim count) for each ransomware group tracked by ransomware.live.\n\n"
+        "#ExamplePrompts\n"
+        "- List all tracked ransomware groups.\n"
+        "- Which ransomware groups are most active right now?\n"
+        "- Give me a directory of known ransomware operators."
     ),
 )
 async def ransomware_groups_endpoint(

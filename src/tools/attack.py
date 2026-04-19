@@ -122,7 +122,13 @@ async def _attack_search(query: str, limit: int = 20) -> list[AttackTechnique]:
     "/technique",
     response_model=AttackTechnique | None,
     summary="Get a MITRE ATT&CK Enterprise technique by ID",
-    description="Look up a technique or sub-technique (e.g. T1566 or T1566.001).",
+    description=(
+        "Look up a technique or sub-technique (e.g. T1566 or T1566.001).\n\n"
+        "#ExamplePrompts\n"
+        "- Summarize MITRE ATT&CK technique T1566.001.\n"
+        "- What tactics does T1059 belong to?\n"
+        "- Describe ATT&CK technique T1078 and its detection guidance."
+    ),
 )
 async def attack_technique_endpoint(
     technique_id: str = Query(..., examples=["T1566.001"]),
@@ -136,7 +142,11 @@ async def attack_technique_endpoint(
     summary="Search MITRE ATT&CK Enterprise techniques",
     description=(
         "Case-insensitive substring match across technique ID, name, description, "
-        "tactics, and platforms."
+        "tactics, and platforms.\n\n"
+        "#ExamplePrompts\n"
+        "- Find ATT&CK techniques related to phishing.\n"
+        "- Search MITRE ATT&CK for credential access techniques.\n"
+        "- Which ATT&CK techniques target Linux platforms?"
     ),
 )
 async def attack_search_endpoint(
