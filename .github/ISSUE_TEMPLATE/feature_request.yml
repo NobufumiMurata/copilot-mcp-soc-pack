@@ -1,0 +1,56 @@
+name: Feature request / new tool
+description: Propose a new threat-intel source or capability
+title: "[feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion! Please confirm the proposal fits the project policy below before filling in the details.
+  - type: checkboxes
+    id: policy
+    attributes:
+      label: Project policy fit
+      description: All of the following must be true. See [CONTRIBUTING.md](../../CONTRIBUTING.md).
+      options:
+        - label: The upstream API has a **free or freemium** tier (no commercial-only sources)
+          required: true
+        - label: It exposes a **documented public API** (no scraping)
+          required: true
+        - label: It does **not** require ingesting raw leak-site contents, breached credentials, or PII
+          required: true
+        - label: A SOC analyst can self-serve any required API key in under 2 minutes
+          required: true
+  - type: input
+    id: source
+    attributes:
+      label: Upstream source
+      description: Name + link to the API docs.
+      placeholder: "Shodan InternetDB — https://internetdb.shodan.io/"
+    validations:
+      required: true
+  - type: textarea
+    id: usecase
+    attributes:
+      label: SOC use case
+      description: What investigation question does this answer? Who would call it from Security Copilot and why?
+    validations:
+      required: true
+  - type: textarea
+    id: endpoints
+    attributes:
+      label: Proposed endpoints
+      placeholder: |
+        - GET /shodan/internetdb?ip=1.2.3.4 → ports, hostnames, CPEs, vulns
+    validations:
+      required: true
+  - type: input
+    id: rate-limit
+    attributes:
+      label: Upstream rate limit
+      placeholder: "60 req/min anonymous, 1k/day with free key"
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Are there official Security Copilot plugins or other OSS that already cover this? Why bundle it here anyway?

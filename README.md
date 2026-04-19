@@ -1,13 +1,13 @@
 # copilot-mcp-soc-pack
 
-**Community SOC Pack for Microsoft Security Copilot** — free-API MCP server and OpenAPI plugin that gives your SOC instant context from KEV, EPSS, MITRE ATT&CK, Abuse.ch, GreyNoise, AbuseIPDB, crt.sh, and ransomware.live.
+**Community SOC Pack for Microsoft Security Copilot** — free-API MCP server and OpenAPI plugin that gives your SOC instant context from CISA KEV, FIRST EPSS, MITRE ATT&CK, abuse.ch (MalwareBazaar / ThreatFox / URLhaus), GreyNoise, AbuseIPDB, crt.sh, ransomware.live, AlienVault OTX, and Have I Been Pwned.
 
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FNobufumiMurata%2Fcopilot-mcp-soc-pack%2Fmaster%2Fdeploy%2Fazuredeploy.json)
 
 [![Build](https://github.com/NobufumiMurata/copilot-mcp-soc-pack/actions/workflows/build-push.yml/badge.svg)](https://github.com/NobufumiMurata/copilot-mcp-soc-pack/actions/workflows/build-push.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-> **Status**: v0.4 (production-ready). 8 tool groups live across REST + MCP, validated end-to-end against Microsoft Security Copilot. See [ROADMAP](#roadmap).
+> **Status**: **v0.5 Public Preview**. 10 tool groups (24 skills) live across REST + MCP, validated end-to-end against Microsoft Security Copilot. Looking for SOC feedback before tagging v1.0 — please open an issue or a discussion. Breaking changes possible until v1.0. Security disclosures: see [SECURITY.md](./SECURITY.md). See [ROADMAP](#roadmap) and [Known limitations](#known-limitations).
 
 ## Why this exists
 
@@ -184,8 +184,23 @@ See [mcp-client-config/](./mcp-client-config/) for ready-to-use configurations.
 - [x] v0.2 Abuse.ch Pack (MalwareBazaar, ThreatFox, URLhaus)
 - [x] v0.3 IP/Domain Reputation (GreyNoise, AbuseIPDB, crt.sh)
 - [x] v0.4 ransomware.live tools + Security Copilot integration (native manifest, OpenAPI 3.0.1 downgrade, reference `agent.yaml`)
-- [ ] v0.5 Promptbook samples, additional ATT&CK enrichment, structured eval harness
-- [ ] v1.0 Bilingual README polish, hardening, public release
+- [x] v0.5 AlienVault OTX + Have I Been Pwned, smoke harness, `#ExamplePrompts` planner hints, **Public Preview**
+- [ ] v0.6 Promptbook samples, structured eval harness, additional ATT&CK enrichment
+- [ ] v1.0 Hardening (Managed Identity inbound, retry/backoff, metrics), GA based on Preview feedback
+
+## Known limitations
+
+This is a **Public Preview**. The following are intentional gaps today; PRs and issues welcome.
+
+- **Inbound auth is API key only.** No Managed Identity, no Entra ID inbound, no per-caller RBAC. Rotate the shared `MCP_SOC_PACK_API_KEY` regularly.
+- **No upstream retry / circuit breaker.** If an upstream API is degraded the call surfaces the upstream status (429 / 503) directly to Security Copilot.
+- **In-memory TTL cache only.** Cache resets on every cold start (which is expected at scale-to-zero). No Redis, no shared cache across replicas.
+- **Single region.** The `Deploy to Azure` button provisions one Container Apps environment. There is no multi-region active-active sample yet.
+- **Observability is logs only.** Container App logs land in a Log Analytics workspace; there are no custom metrics, traces, or a Workbook yet.
+- **`/health` and `/openapi.json` are intentionally un-authenticated** to support Container App probes and OpenAPI ingestion. Restrict ingress (Front Door, IP allow-list, private endpoint) if this is unacceptable.
+- **OpenAPI is downgraded to 3.0.1 at runtime.** Microsoft Security Copilot rejects 3.1; downstream tools that rely on 3.1 features should consume the FastAPI source instead of `/openapi.json`.
+- **No Sentinel Workbook / Foundry agent sample bundled yet.** Planned for v0.6.
+- **Breaking changes possible until v1.0.** Pin the container image to a semver tag (`:0.5.0`), not `:latest`, and watch the release notes.
 
 ## Contributing
 

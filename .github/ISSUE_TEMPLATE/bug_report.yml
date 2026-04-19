@@ -1,0 +1,73 @@
+name: Bug report
+description: Something is broken or behaves unexpectedly
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug! A few notes:
+        - **Do not include API keys, X-API-Key headers, JWTs, or other secrets.** Redact them.
+        - For security vulnerabilities, please use a private GitHub Security Advisory instead — see [SECURITY.md](../../SECURITY.md).
+  - type: input
+    id: version
+    attributes:
+      label: Version / image tag
+      description: Output of `curl https://<fqdn>/health` or the GHCR tag you deployed (e.g. `0.5.0`, `sha-abc1234`).
+      placeholder: "0.5.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where did you hit the bug?
+      multiple: true
+      options:
+        - Microsoft Security Copilot (custom plugin)
+        - REST endpoint (curl / Postman)
+        - MCP client (VS Code)
+        - MCP client (Claude Desktop)
+        - MCP client (other)
+        - Azure deploy (Bicep / Deploy to Azure button)
+        - GitHub Actions / CI
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A concise description of the bug, including the offending tool / endpoint name.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Deploy with `az deployment group create ...`
+        2. Run `curl -H "X-API-Key: ***" https://.../kev/lookup?cve_id=CVE-2024-3400`
+        3. Observe HTTP 500
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / response body
+      description: Container App logs (`az containerapp logs show`) or the JSON error body. **Redact secrets.**
+      render: shell
+  - type: textarea
+    id: env
+    attributes:
+      label: Deployment environment
+      placeholder: |
+        - Region: japaneast
+        - minReplicas / maxReplicas: 0 / 3
+        - Upstream API keys configured: abuse.ch, AbuseIPDB, OTX
+        - SC plugin auth: APIKey via X-API-Key
