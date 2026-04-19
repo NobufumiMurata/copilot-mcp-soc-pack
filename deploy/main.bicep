@@ -32,6 +32,9 @@ param greynoiseApiKey string = ''
 @description('Free AbuseIPDB API key (https://www.abuseipdb.com/register). Required for /abuseipdb/check. Leave empty to disable.')
 @secure()
 param abuseIpdbApiKey string = ''
+@description('Free AlienVault OTX API key (https://otx.alienvault.com/, Settings -> API Integration). Required for /otx/* endpoints. Leave empty to disable.')
+@secure()
+param otxApiKey string = ''
 @description('Minimum number of replicas. Set 0 for scale-to-zero.')
 @minValue(0)
 @maxValue(5)
@@ -109,6 +112,12 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             name: 'abuseipdb-api-key'
             value: abuseIpdbApiKey
           }
+        ],
+        empty(otxApiKey) ? [] : [
+          {
+            name: 'otx-api-key'
+            value: otxApiKey
+          }
         ]
       )
     }
@@ -144,6 +153,12 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
               {
                 name: 'ABUSEIPDB_API_KEY'
                 secretRef: 'abuseipdb-api-key'
+              }
+            ],
+            empty(otxApiKey) ? [] : [
+              {
+                name: 'OTX_API_KEY'
+                secretRef: 'otx-api-key'
               }
             ]
           )

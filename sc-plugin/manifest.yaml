@@ -44,6 +44,12 @@ Descriptor:
     - Ransomware leak-site activity (victims, groups, country-level
       impact): ransomware_live_recent, ransomware_live_by_group,
       ransomware_live_by_country, ransomware_live_groups.
+    - Community threat-intel pulses for any indicator (IP, domain, URL,
+      file hash): otx_lookup_ipv4, otx_lookup_ipv6, otx_lookup_domain,
+      otx_lookup_file, otx_lookup_url (AlienVault OTX).
+    - Public data-breach exposure for an organisation's domain or a
+      named breach: hibp_breaches_by_domain, hibp_breach (Have I Been
+      Pwned).
 
     Never invent data the tools did not return. Cite the source endpoint
     when presenting results (for example: "per CISA KEV", "per

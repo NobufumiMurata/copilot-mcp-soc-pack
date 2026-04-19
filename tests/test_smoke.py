@@ -42,7 +42,7 @@ def client(monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     monkeypatch.setenv("MCP_SOC_PACK_API_KEY", API_KEY)
     # Force abuse.ch / GreyNoise / AbuseIPDB into the 503 branch so the
     # smoke test stays hermetic (no outbound network to upstream APIs).
-    for var in ("ABUSE_CH_AUTH_KEY", "GREYNOISE_API_KEY", "ABUSEIPDB_API_KEY"):
+    for var in ("ABUSE_CH_AUTH_KEY", "GREYNOISE_API_KEY", "ABUSEIPDB_API_KEY", "OTX_API_KEY"):
         monkeypatch.delenv(var, raising=False)
     with TestClient(app) as c:
         yield c

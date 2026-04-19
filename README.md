@@ -32,6 +32,8 @@ One `Deploy to Azure` click → Container Apps (scale-to-zero, < $5/month idle) 
 | `abuseipdb_check` | [AbuseIPDB](https://www.abuseipdb.com/) | Free key | IP reputation | **Yes** — `AbuseIPDB (Preview)` built into Security Copilot Sources |
 | `crtsh_subdomains` | [crt.sh](https://crt.sh/) | No | Certificate transparency | No |
 | `ransomware_live_recent` / `_by_group` / `_by_country` / `_groups` | [ransomware.live](https://www.ransomware.live/) v2 | No | Ransomware victim metadata | No |
+| `otx_lookup_ipv4` / `_ipv6` / `_domain` / `_file` / `_url` | [AlienVault OTX](https://otx.alienvault.com/) | Free key | Community threat-intel pulses for any indicator | No |
+| `hibp_breaches_by_domain` / `hibp_breach` | [Have I Been Pwned](https://haveibeenpwned.com/) | No | Public data-breach exposure for a domain | No |
 
 > **Why implement GreyNoise and AbuseIPDB anyway?** Microsoft ships official
 > plugins for both. Keeping the implementations here gives SOC teams a single
@@ -41,7 +43,7 @@ One `Deploy to Azure` click → Container Apps (scale-to-zero, < $5/month idle) 
 > disable the `greynoise_classify` and `abuseipdb_check` tools in your
 > plugin configuration and use the first-party plugins instead.
 
-**Currently implemented in v0.4**: KEV + EPSS + ATT&CK (v0.1) · Abuse.ch Pack (v0.2) · IP & Domain Reputation (v0.3, GreyNoise / AbuseIPDB / crt.sh) · ransomware.live (v0.4, recent/by_group/by_country/groups). Remaining tools land in v0.5–v0.6.
+**Currently implemented in v0.4**: KEV + EPSS + ATT&CK (v0.1) · Abuse.ch Pack (v0.2) · IP & Domain Reputation (v0.3, GreyNoise / AbuseIPDB / crt.sh) · ransomware.live (v0.4, recent/by_group/by_country/groups) · AlienVault OTX + Have I Been Pwned (v0.5). Remaining tools land in v0.6.
 
 ### Optional environment variables
 
@@ -51,6 +53,7 @@ One `Deploy to Azure` click → Container Apps (scale-to-zero, < $5/month idle) 
 | `ABUSE_CH_AUTH_KEY` | `/abusech/*` | Free key from <https://auth.abuse.ch/>. Required — abuse.ch rejects anonymous calls with HTTP 401. |
 | `GREYNOISE_API_KEY` | `/greynoise/*` | Free Community key from <https://viz.greynoise.io/signup> → *Account → API Key*. Required for GreyNoise classification. |
 | `ABUSEIPDB_API_KEY` | `/abuseipdb/*` | Free key from <https://www.abuseipdb.com/register> → *API → Create Key* (1000 req/day). Required for AbuseIPDB checks. |
+| `OTX_API_KEY` | `/otx/*` | Free key from <https://otx.alienvault.com/> → *Settings → API Integration*. Required for AlienVault OTX indicator lookups. |
 
 ## Architecture
 
@@ -73,6 +76,8 @@ flowchart LR
         AIPDB[AbuseIPDB]
         CRTSH[crt.sh]
         RWLIVE[ransomware.live]
+        OTX[AlienVault OTX]
+        HIBP[Have I Been Pwned]
     end
 
     User -->|prompt| SC
@@ -87,6 +92,8 @@ flowchart LR
     App --> AIPDB
     App --> CRTSH
     App --> RWLIVE
+    App --> OTX
+    App --> HIBP
 ```
 
 A single container exposes the same tools two ways: as a Security Copilot custom plugin (REST + OpenAPI) and as an MCP server (SSE) for desktop clients. Upstream API keys are held as Container App secrets and never leave the container.

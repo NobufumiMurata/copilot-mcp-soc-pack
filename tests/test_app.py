@@ -36,6 +36,13 @@ def test_openapi_schema_contains_tools():
     assert "/ransomware/by_group" in paths
     assert "/ransomware/by_country" in paths
     assert "/ransomware/groups" in paths
+    assert "/otx/ipv4" in paths
+    assert "/otx/ipv6" in paths
+    assert "/otx/domain" in paths
+    assert "/otx/file" in paths
+    assert "/otx/url" in paths
+    assert "/hibp/breaches_by_domain" in paths
+    assert "/hibp/breach" in paths
 
 
 def test_openapi_is_3_0_1_for_security_copilot():

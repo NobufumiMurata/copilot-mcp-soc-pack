@@ -17,7 +17,18 @@ from fastmcp import FastMCP
 
 from src import __version__
 from src.common.openapi_compat import downgrade_to_3_0_1
-from src.tools import abusech, abuseipdb, attack, crtsh, epss, greynoise, kev, ransomwarelive
+from src.tools import (
+    abusech,
+    abuseipdb,
+    attack,
+    crtsh,
+    epss,
+    greynoise,
+    hibp,
+    kev,
+    otx,
+    ransomwarelive,
+)
 
 API_KEY_ENV = "MCP_SOC_PACK_API_KEY"
 
@@ -111,6 +122,8 @@ app.include_router(greynoise.router, dependencies=[Depends(_require_api_key)])
 app.include_router(abuseipdb.router, dependencies=[Depends(_require_api_key)])
 app.include_router(crtsh.router, dependencies=[Depends(_require_api_key)])
 app.include_router(ransomwarelive.router, dependencies=[Depends(_require_api_key)])
+app.include_router(otx.router, dependencies=[Depends(_require_api_key)])
+app.include_router(hibp.router, dependencies=[Depends(_require_api_key)])
 
 
 # --- MCP server --------------------------------------------------------------
@@ -127,5 +140,7 @@ greynoise.register_mcp_tools(mcp)
 abuseipdb.register_mcp_tools(mcp)
 crtsh.register_mcp_tools(mcp)
 ransomwarelive.register_mcp_tools(mcp)
+otx.register_mcp_tools(mcp)
+hibp.register_mcp_tools(mcp)
 
 app.mount("/mcp", mcp.http_app())

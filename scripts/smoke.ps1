@@ -50,11 +50,13 @@ $probes = @(
     @{ Name = 'epss_score CVE-2024-3400';    Path = '/epss/score?cve_id=CVE-2024-3400';                         Auth = $true  }
     @{ Name = 'attack T1566';                Path = '/attack/technique?technique_id=T1566';                     Auth = $true  }
     @{ Name = 'crtsh example.com';           Path = '/crtsh/subdomains?domain=example.com';                     Auth = $true  }
-    @{ Name = 'ransomware_live recent';      Path = '/ransomwarelive/recent?days=7';                            Auth = $true  }
+    @{ Name = 'ransomware_live recent';      Path = '/ransomware/recent?limit=5';                               Auth = $true  }
     @{ Name = 'malwarebazaar recent';        Path = '/abusech/malwarebazaar/recent?window=100&limit=2';         Auth = $true  }
     @{ Name = 'threatfox recent';            Path = '/abusech/threatfox/recent?days=1';                         Auth = $true  }
     @{ Name = 'abuseipdb 1.1.1.1';           Path = '/abuseipdb/check?ip=1.1.1.1';                              Auth = $true  }
     @{ Name = 'greynoise 8.8.8.8';           Path = '/greynoise/classify?ip=8.8.8.8';                           Auth = $true  }
+    @{ Name = 'otx ipv4 8.8.8.8';            Path = '/otx/ipv4?ip=8.8.8.8';                                     Auth = $true  }
+    @{ Name = 'hibp breaches adobe.com';     Path = '/hibp/breaches_by_domain?domain=adobe.com';                Auth = $true  }
 )
 
 $results = foreach ($p in $probes) {
