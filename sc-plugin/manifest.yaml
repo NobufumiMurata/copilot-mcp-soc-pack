@@ -1,69 +1,65 @@
-# Microsoft Security Copilot custom plugin manifest (OpenAI format).
+# Microsoft Security Copilot **native** plugin manifest (Descriptor + SkillGroups).
 #
-# Security Copilot accepts either its native Descriptor/SkillGroups manifest
-# or the classic OpenAI ai-plugin manifest; it converts OpenAI manifests
-# internally (see https://learn.microsoft.com/en-us/copilot/security/custom-plugins).
-# We publish the OpenAI variant because it is a single short file that points
-# at the OpenAPI spec already served by the Container App at /openapi.json.
+# This is the format Security Copilot's plugin loader actually supports for
+# shared-secret authentication. The OpenAI ai-plugin.json variant in this
+# folder is kept for completeness but its auth section is rejected by SC
+# ("Unsupported auth type"); use this YAML instead.
 #
-# IMPORTANT:
-# - Upload this file via: Security Copilot -> Sources -> Manage plugins ->
-#   Custom -> Upload plugin -> OpenAI plugin. Either paste the raw GitHub URL
-#   of this file or upload it directly.
-# - The `api.url` below MUST point at an OpenAPI 3.0 / 3.0.1 spec. This
-#   project serves one at /openapi.json (FastAPI is forced to 3.0.1 via
-#   src/common/openapi_compat.py).
-# - The `X-API-Key` requirement is advertised via the OpenAPI
-#   `securitySchemes.ApiKeyAuth` block, so Security Copilot will prompt for
-#   the key value during plugin setup.
+# Upload steps:
+#   1. Sources -> Custom -> Upload plugin
+#   2. Plugin type: **Security Copilot plugin** (NOT "OpenAI plugin")
+#   3. Upload as link: paste the raw GitHub URL of this file
+#       https://raw.githubusercontent.com/NobufumiMurata/copilot-mcp-soc-pack/master/sc-plugin/manifest.yaml
+#   4. Add -> Setup -> paste the shared API key (the value of $env:MCP_API_KEY)
+#
+# The deployed app accepts the same secret via either ``X-API-Key`` (used
+# here) or ``Authorization: Bearer`` for non-SC clients.
 
-schema_version: v1
-name_for_model: copilot_mcp_soc_pack
-name_for_human: Copilot MCP SOC Pack
-description_for_human: >-
-  Free-API SOC enrichment (CISA KEV, FIRST EPSS, MITRE ATT&CK, abuse.ch,
-  GreyNoise, AbuseIPDB, crt.sh, ransomware.live) for Security Copilot.
-description_for_model: |
-  Community SOC pack that enriches security investigations using free,
-  no-payment APIs. Call these skills whenever a prompt mentions a CVE, IP,
-  domain, URL, file hash, ransomware group or victim organisation.
+Descriptor:
+  Name: copilot_mcp_soc_pack
+  DisplayName: Copilot MCP SOC Pack
+  Description: >-
+    Free-API SOC enrichment (CISA KEV, FIRST EPSS, MITRE ATT&CK, abuse.ch,
+    GreyNoise, AbuseIPDB, crt.sh, ransomware.live) for Microsoft Security
+    Copilot.
+  DescriptionForModel: |
+    Community SOC pack that enriches security investigations using free,
+    no-payment APIs. Call these skills whenever a prompt mentions a CVE,
+    IP, domain, URL, file hash, ransomware group or victim organisation.
 
-  Skill selection hints:
-  - CVE exploitation status: kev_lookup, kev_search (CISA Known Exploited
-    Vulnerabilities catalog).
-  - CVE exploitation probability: epss_score (FIRST EPSS).
-  - MITRE ATT&CK technique lookup or search: attack_technique, attack_search.
-  - Malware sample, hash or URL analysis: malwarebazaar_lookup /
-    malwarebazaar_recent, urlhaus_lookup_url, urlhaus_lookup_host.
-  - IOC enrichment for IPs, domains, URLs or hashes tied to active campaigns:
-    threatfox_recent, threatfox_search.
-  - IP reputation and scanner-noise classification: greynoise_classify,
-    abuseipdb_check.
-  - Subdomain enumeration and attack-surface discovery for a domain:
-    crtsh_subdomains (uses Certificate Transparency logs).
-  - Ransomware leak-site activity (victims, groups, country-level impact):
-    ransomware_live_recent, ransomware_live_by_group,
-    ransomware_live_by_country, ransomware_live_groups.
+    Skill selection hints:
+    - CVE exploitation status: kev_lookup, kev_search (CISA Known
+      Exploited Vulnerabilities catalog).
+    - CVE exploitation probability: epss_score (FIRST EPSS).
+    - MITRE ATT&CK technique lookup or search: attack_technique,
+      attack_search.
+    - Malware sample, hash or URL analysis: malwarebazaar_lookup /
+      malwarebazaar_recent, urlhaus_lookup_url, urlhaus_lookup_host.
+    - IOC enrichment for IPs, domains, URLs or hashes tied to active
+      campaigns: threatfox_recent, threatfox_search.
+    - IP reputation and scanner-noise classification: greynoise_classify,
+      abuseipdb_check.
+    - Subdomain enumeration and attack-surface discovery for a domain:
+      crtsh_subdomains (uses Certificate Transparency logs).
+    - Ransomware leak-site activity (victims, groups, country-level
+      impact): ransomware_live_recent, ransomware_live_by_group,
+      ransomware_live_by_country, ransomware_live_groups.
 
-  Never invent data the tools did not return. Cite the source endpoint when
-  presenting results (for example: "per CISA KEV", "per ransomware.live").
+    Never invent data the tools did not return. Cite the source endpoint
+    when presenting results (for example: "per CISA KEV", "per
+    ransomware.live").
+  SupportedAuthTypes:
+    - ApiKey
+  Authorization:
+    Type: APIKey
+    Key: X-API-Key
+    Location: Header
+    AuthScheme: ''
 
-api:
-  type: openapi
-  # The plugin consumes the OpenAPI 3.0.1 schema hosted by the deployed
-  # Container App. Replace the host below with your own FQDN if you fork.
-  url: https://copilot-mcp-soc-pack.salmonsea-6e7f9e16.japaneast.azurecontainerapps.io/openapi.json
-
-auth:
-  # Security Copilot's OpenAI plugin loader only supports
-  # authorization_type: bearer (per Microsoft Learn). Use service_http so
-  # the workspace owner enters the shared secret once during plugin
-  # registration; SC then injects ''Authorization: Bearer <key>'' on every
-  # call. The deployed app accepts both that header and X-API-Key.
-  type: service_http
-  authorization_type: bearer
-  verification_tokens: {}
-
-logo_url: https://raw.githubusercontent.com/NobufumiMurata/copilot-mcp-soc-pack/master/.github/assets/logo.png
-contact_email: soc-pack@users.noreply.github.com
-legal_info_url: https://github.com/NobufumiMurata/copilot-mcp-soc-pack/blob/master/LICENSE
+SkillGroups:
+  - Format: API
+    Settings:
+      # Replace with your own FQDN if you fork. The deployed Container App
+      # serves an OpenAPI 3.0.1 spec (downgraded from FastAPI 3.1) at this
+      # URL and is gated by the X-API-Key header configured above.
+      OpenApiSpecUrl: https://copilot-mcp-soc-pack.salmonsea-6e7f9e16.japaneast.azurecontainerapps.io/openapi.json

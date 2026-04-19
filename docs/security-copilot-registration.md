@@ -52,31 +52,31 @@ If any of the above does not match, fix the deployment before continuing.
 4. In the dialog:
    - **Availability**: `Just me` for the first round of testing. Switch to
      `Anyone in the organization` once you are happy with behaviour.
-   - **Plugin type**: choose **OpenAI plugin** (the manifest in this repo
-     uses the OpenAI `ai-plugin` format).
+   - **Plugin type**: choose **Security Copilot plugin** — *not* "OpenAI
+     plugin". Security Copilot's OpenAI-plugin loader does not yet support
+     shared-secret authentication, so the native Descriptor + SkillGroups
+     manifest in this repo is the supported path.
 5. Provide the manifest. Either option works:
    - **Upload as link**: paste the raw GitHub URL of
-     [`sc-plugin/ai-plugin.json`](../sc-plugin/ai-plugin.json) and select the
-     file type `JSON`.
-   - **Upload file**: pick the local copy of `sc-plugin/ai-plugin.json`.
+     [`sc-plugin/manifest.yaml`](../sc-plugin/manifest.yaml) and select the
+     file type `YAML`.
+   - **Upload file**: pick the local copy of `sc-plugin/manifest.yaml`.
 
-   > Security Copilot's **OpenAI plugin** uploader expects a JSON manifest
-   > (`ai-plugin.json`). The repo also ships a YAML mirror at
-   > `sc-plugin/manifest.yaml` for readability, but use the `.json` file
-   > when registering.
+   > The OpenAI-format mirror at `sc-plugin/ai-plugin.json` is kept for
+   > completeness, but Security Copilot rejects its `auth` block today
+   > with "Unsupported auth type". Use the YAML manifest instead.
 6. Click **Add**.
 
-Security Copilot will fetch the manifest, follow `api.url` to download the
-OpenAPI spec, and flag that the spec declares an `ApiKeyAuth` security
-scheme. You will be redirected to a setup panel.
+Security Copilot will fetch the manifest, follow `OpenApiSpecUrl` to
+download the OpenAPI spec, and prompt you to configure the `X-API-Key`
+header value (declared via `Authorization.Type: APIKey` in the manifest).
 
 ## 3. Configure the API key
 
-1. In the plugin setup panel, locate the **X-API-Key** input (the name
-   comes from the OpenAPI `securitySchemes` block).
-2. Paste the shared API key you set when deploying the Container App
-   (`$env:MCP_API_KEY` in the deployment runbook).
-3. Click **Setup** / **Save**.
+1. In the plugin setup panel, paste the shared API key you set when
+   deploying the Container App (`$env:MCP_API_KEY` in the deployment
+   runbook) into the **X-API-Key** field.
+2. Click **Setup** / **Save**.
 
 The plugin will appear in the **Custom** section of the Sources panel with
 a toggle. Make sure the toggle is **On**.
