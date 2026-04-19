@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.42.1.51946",
-      "templateHash": "6001020808369114484"
+      "templateHash": "678075599944877869"
     }
   },
   "parameters": {
@@ -58,6 +58,13 @@
       "defaultValue": "",
       "metadata": {
         "description": "Free AbuseIPDB API key (https://www.abuseipdb.com/register). Required for /abuseipdb/check. Leave empty to disable."
+      }
+    },
+    "otxApiKey": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Free AlienVault OTX API key (https://otx.alienvault.com/, Settings -> API Integration). Required for /otx/* endpoints. Leave empty to disable."
       }
     },
     "minReplicas": {
@@ -131,7 +138,7 @@
             "transport": "auto",
             "allowInsecure": false
           },
-          "secrets": "[concat(if(empty(parameters('apiKey')), createArray(), createArray(createObject('name', 'api-key', 'value', parameters('apiKey')))), if(empty(parameters('abuseChAuthKey')), createArray(), createArray(createObject('name', 'abusech-auth-key', 'value', parameters('abuseChAuthKey')))), if(empty(parameters('greynoiseApiKey')), createArray(), createArray(createObject('name', 'greynoise-api-key', 'value', parameters('greynoiseApiKey')))), if(empty(parameters('abuseIpdbApiKey')), createArray(), createArray(createObject('name', 'abuseipdb-api-key', 'value', parameters('abuseIpdbApiKey')))))]"
+          "secrets": "[concat(if(empty(parameters('apiKey')), createArray(), createArray(createObject('name', 'api-key', 'value', parameters('apiKey')))), if(empty(parameters('abuseChAuthKey')), createArray(), createArray(createObject('name', 'abusech-auth-key', 'value', parameters('abuseChAuthKey')))), if(empty(parameters('greynoiseApiKey')), createArray(), createArray(createObject('name', 'greynoise-api-key', 'value', parameters('greynoiseApiKey')))), if(empty(parameters('abuseIpdbApiKey')), createArray(), createArray(createObject('name', 'abuseipdb-api-key', 'value', parameters('abuseIpdbApiKey')))), if(empty(parameters('otxApiKey')), createArray(), createArray(createObject('name', 'otx-api-key', 'value', parameters('otxApiKey')))))]"
         },
         "template": {
           "containers": [
@@ -142,7 +149,7 @@
                 "cpu": "[json('0.5')]",
                 "memory": "1.0Gi"
               },
-              "env": "[concat(if(empty(parameters('apiKey')), createArray(), createArray(createObject('name', 'MCP_SOC_PACK_API_KEY', 'secretRef', 'api-key'))), if(empty(parameters('abuseChAuthKey')), createArray(), createArray(createObject('name', 'ABUSE_CH_AUTH_KEY', 'secretRef', 'abusech-auth-key'))), if(empty(parameters('greynoiseApiKey')), createArray(), createArray(createObject('name', 'GREYNOISE_API_KEY', 'secretRef', 'greynoise-api-key'))), if(empty(parameters('abuseIpdbApiKey')), createArray(), createArray(createObject('name', 'ABUSEIPDB_API_KEY', 'secretRef', 'abuseipdb-api-key'))))]",
+              "env": "[concat(if(empty(parameters('apiKey')), createArray(), createArray(createObject('name', 'MCP_SOC_PACK_API_KEY', 'secretRef', 'api-key'))), if(empty(parameters('abuseChAuthKey')), createArray(), createArray(createObject('name', 'ABUSE_CH_AUTH_KEY', 'secretRef', 'abusech-auth-key'))), if(empty(parameters('greynoiseApiKey')), createArray(), createArray(createObject('name', 'GREYNOISE_API_KEY', 'secretRef', 'greynoise-api-key'))), if(empty(parameters('abuseIpdbApiKey')), createArray(), createArray(createObject('name', 'ABUSEIPDB_API_KEY', 'secretRef', 'abuseipdb-api-key'))), if(empty(parameters('otxApiKey')), createArray(), createArray(createObject('name', 'OTX_API_KEY', 'secretRef', 'otx-api-key'))))]",
               "probes": [
                 {
                   "type": "Liveness",
