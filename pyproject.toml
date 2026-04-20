@@ -1,6 +1,6 @@
 [project]
 name = "copilot-mcp-soc-pack"
-version = "0.6.0"
+version = "0.7.0"
 description = "Community SOC Pack for Microsoft Security Copilot — free-API MCP server and OpenAPI plugin"
 readme = "README.md"
 requires-python = ">=3.12"
