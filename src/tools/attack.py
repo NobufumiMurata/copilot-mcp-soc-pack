@@ -13,7 +13,7 @@ from fastapi import APIRouter, HTTPException, Query
 from fastmcp import FastMCP
 from pydantic import BaseModel
 
-from src.common.http import TTLCache, get_client
+from src.common.http import TTLCache, request_with_retry
 
 ATTACK_URL = (
     "https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/enterprise-attack.json"
@@ -40,8 +40,10 @@ async def _load_bundle() -> dict[str, Any]:
     cached = await _cache.get("bundle")
     if cached is not None:
         return cached
-    client = await get_client()
-    response = await client.get(ATTACK_URL)
+    # The MITRE CTI bundle is a ~30 MB JSON served from raw.githubusercontent.com,
+    # which occasionally answers 5xx during edge cache rotations. Retry transient
+    # failures via the shared backoff helper.
+    response = await request_with_retry("GET", ATTACK_URL)
     response.raise_for_status()
     data = response.json()
     await _cache.set("bundle", data)
