@@ -22,7 +22,7 @@ from fastapi import APIRouter, HTTPException, Query
 from fastmcp import FastMCP
 from pydantic import BaseModel
 
-from src.common.http import TTLCache, get_client
+from src.common.http import TTLCache, request_with_retry
 
 HIBP_BASE = "https://haveibeenpwned.com/api/v3"
 
@@ -80,8 +80,12 @@ async def _breaches_for_domain(domain: str) -> list[HIBPBreach]:
     if cached is not None:
         return [HIBPBreach(**b) for b in cached]
 
-    client = await get_client()
-    response = await client.get(f"{HIBP_BASE}/breaches", params={"domain": target})
+    # 5xx and 429 are transient; retry via the shared backoff helper. After
+    # the retry budget is exhausted the final response (including 429 / 503)
+    # is returned and translated below.
+    response = await request_with_retry(
+        "GET", f"{HIBP_BASE}/breaches", params={"domain": target}
+    )
     if response.status_code == 429:
         raise HTTPException(
             status_code=429,
@@ -109,8 +113,8 @@ async def _breach_by_name(name: str) -> HIBPBreach | None:
     if cached is not None:
         return HIBPBreach(**cached) if cached else None
 
-    client = await get_client()
-    response = await client.get(f"{HIBP_BASE}/breach/{target}")
+    # 5xx and 429 are transient; retry via the shared backoff helper.
+    response = await request_with_retry("GET", f"{HIBP_BASE}/breach/{target}")
     if response.status_code == 404:
         await _cache.set(cache_key, None)
         return None
