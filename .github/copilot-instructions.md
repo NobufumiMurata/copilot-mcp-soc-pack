@@ -116,19 +116,32 @@ app.include_router(<new>.router, dependencies=[Depends(_require_api_key)])
 
 ## 8. Git / GitHub
 
-- **デフォルトブランチ: `master`**
-- コミットメッセージは **英語**。Conventional Commits 推奨:
+- **デフォルトブランチ: `master`** (Public Preview 以降はブランチ保護有効)
+- コミットメッセージは **英語**。Conventional Commits 必須:
   - `feat: add greynoise community classifier`
   - `fix(kev): handle missing dateAdded gracefully`
   - `chore: regenerate azuredeploy.json`
+  - `chore(deps): bump httpx to 0.28`
   - `docs: update Deploy to Azure instructions`
-- PR 説明も英語。スクリーンショット / curl 出力で動作エビデンスを示すこと
-- ブランチモデル: 小さな機能は master 直接 push、大きな変更は `feat/*` ブランチから PR
+- **すべての変更は feature ブランチ + Pull Request 経由**。`master` への直接 push は CI が落ちている等の緊急時のみ
+- ブランチ命名:
+  - `feat/<topic>` — 機能追加 (例: `feat/p5-per-tool-tests`)
+  - `fix/<topic>` — バグ修正
+  - `chore/<topic>` — CI / 依存更新 / 雑務
+  - `docs/<topic>` — ドキュメントのみ
+- PR 説明も英語。スクリーンショット / curl 出力 / `scripts/smoke.ps1` の結果で動作エビデンスを示すこと
+- マージは **squash merge** を既定とする (履歴を線形に保つ)
+- ブランチ保護: `master` は `lint-test` (ruff + mypy + pytest) の status check が green でないとマージ不可。設定は [`scripts/setup-branch-protection.ps1`](../scripts/setup-branch-protection.ps1) を参照
 
 ## 9. GHCR / リリース
 
-- `master` への push で `ghcr.io/nobufumimurata/copilot-mcp-soc-pack:latest` と `sha-xxxxxxx` が更新される
-- **リリースタグ** (`v0.2.0` など) を push すると semver タグが追加される。タグは semver で `v{major}.{minor}.{patch}`
+- `master` への push (PR マージ) で `ghcr.io/nobufumimurata/copilot-mcp-soc-pack:latest` と `sha-xxxxxxx` が更新される
+- **リリースタグ** (`v0.6.0` など) を push すると semver タグ付き image が追加発行される。タグは semver で `v{major}.{minor}.{patch}`
+- リリース手順:
+  1. v0.x のスコープに含める PR をすべて `master` にマージ
+  2. `chore: bump version to v0.x.0` で `pyproject.toml` の `version` を更新する PR をマージ (`src/__init__.py` は `importlib.metadata` 経由で自動追従)
+  3. `git tag v0.x.0 && git push origin v0.x.0`
+  4. GitHub Release を作成し、PR 一覧から changelog を生成
 
 ## 10. よくある落とし穴
 
