@@ -329,6 +329,32 @@ def test_greynoise_unauthorized(mock_http, monkeypatch):
     assert exc.value.status_code == 401
 
 
+def test_greynoise_retries_5xx(monkeypatch):
+    """GreyNoise classify should ride out a single transient 502."""
+    from src.common import http as http_module
+
+    monkeypatch.setenv(greynoise.GREYNOISE_API_KEY_ENV, "k")
+    payload = {"ip": "8.8.8.8", "noise": False, "riot": True, "classification": "benign"}
+    responses = [httpx.Response(502), httpx.Response(200, json=payload)]
+    seen = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["n"] += 1
+        return responses.pop(0) if responses else httpx.Response(200, json=payload)
+
+    http_module._client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    import src.common.http as h
+
+    original_base = h.DEFAULT_BACKOFF_BASE
+    h.DEFAULT_BACKOFF_BASE = 0.0
+    try:
+        result = _run(greynoise._classify("8.8.8.8"))
+    finally:
+        h.DEFAULT_BACKOFF_BASE = original_base
+    assert result.classification == "benign"
+    assert seen["n"] == 2
+
+
 # --- Abuse.ch --------------------------------------------------------------
 
 
