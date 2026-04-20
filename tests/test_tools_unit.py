@@ -99,6 +99,31 @@ def test_kev_search_vendor_substring(mock_http):
     assert results[0].vendorProject == "Microsoft"
 
 
+def test_kev_catalog_fetch_retries_5xx():
+    """KEV catalog fetch should ride out a single CISA edge cache 503."""
+    from src.common import http as http_module
+
+    responses = [httpx.Response(503), httpx.Response(200, json=_KEV_PAYLOAD)]
+    seen = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["n"] += 1
+        return responses.pop(0) if responses else httpx.Response(200, json=_KEV_PAYLOAD)
+
+    http_module._client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    # Tighten retry timing so the test doesn't sleep for jitter.
+    import src.common.http as h
+
+    original_base = h.DEFAULT_BACKOFF_BASE
+    h.DEFAULT_BACKOFF_BASE = 0.0
+    try:
+        entry = _run(kev._kev_lookup("CVE-2024-3400"))
+    finally:
+        h.DEFAULT_BACKOFF_BASE = original_base
+    assert entry is not None
+    assert seen["n"] == 2  # 1 failure + 1 success
+
+
 # --- EPSS -------------------------------------------------------------------
 
 

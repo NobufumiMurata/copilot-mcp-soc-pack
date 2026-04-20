@@ -9,7 +9,7 @@ from fastapi import APIRouter, Query
 from fastmcp import FastMCP
 from pydantic import BaseModel
 
-from src.common.http import TTLCache, get_client
+from src.common.http import TTLCache, request_with_retry
 
 KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
 
@@ -34,8 +34,10 @@ async def _fetch_catalog() -> dict[str, Any]:
     cached = await _cache.get("catalog")
     if cached is not None:
         return cached
-    client = await get_client()
-    response = await client.get(KEV_URL)
+    # The KEV catalog is a single 1-2 MB JSON; CISA occasionally answers
+    # 502/503 during edge cache rotations, so we retry transient failures
+    # via the shared backoff helper.
+    response = await request_with_retry("GET", KEV_URL)
     response.raise_for_status()
     data = response.json()
     await _cache.set("catalog", data)
