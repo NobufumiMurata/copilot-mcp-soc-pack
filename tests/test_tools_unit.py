@@ -476,6 +476,36 @@ def test_otx_indicator_ok(mock_http, monkeypatch):
     assert result.references == ["https://example.com/r1"]
 
 
+def test_otx_indicator_retries_5xx(monkeypatch):
+    """OTX general fetch should ride out a single 502 from the API gateway."""
+    from src.common import http as http_module
+
+    monkeypatch.setenv(otx.OTX_API_KEY_ENV, "k")
+    payload = {
+        "indicator": "8.8.8.8",
+        "type": "IPv4",
+        "pulse_info": {"count": 0, "pulses": [], "references": []},
+    }
+    responses = [httpx.Response(502), httpx.Response(200, json=payload)]
+    seen = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["n"] += 1
+        return responses.pop(0) if responses else httpx.Response(200, json=payload)
+
+    http_module._client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    import src.common.http as h
+
+    original_base = h.DEFAULT_BACKOFF_BASE
+    h.DEFAULT_BACKOFF_BASE = 0.0
+    try:
+        result = _run(otx._otx_get("IPv4", "8.8.8.8"))
+    finally:
+        h.DEFAULT_BACKOFF_BASE = original_base
+    assert result.indicator == "8.8.8.8"
+    assert seen["n"] == 2
+
+
 # --- ransomware.live --------------------------------------------------------
 
 

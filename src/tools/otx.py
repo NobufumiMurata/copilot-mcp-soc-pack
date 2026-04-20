@@ -19,7 +19,7 @@ from fastapi import APIRouter, HTTPException, Query
 from fastmcp import FastMCP
 from pydantic import BaseModel
 
-from src.common.http import TTLCache, get_client
+from src.common.http import TTLCache, request_with_retry
 
 OTX_BASE = "https://otx.alienvault.com/api/v1/indicators"
 OTX_API_KEY_ENV = "OTX_API_KEY"
@@ -117,8 +117,14 @@ async def _otx_get(indicator_type: str, target: str) -> OTXIndicator:
         return OTXIndicator(**cached)
 
     url = f"{OTX_BASE}/{indicator_type}/{target}/general"
-    client = await get_client()
-    response = await client.get(url, headers={"X-OTX-API-KEY": key, "Accept": "application/json"})
+    # 5xx and 429 are transient; retry via the shared backoff helper. After
+    # the retry budget is exhausted the final response (including 429) is
+    # returned and translated below.
+    response = await request_with_retry(
+        "GET",
+        url,
+        headers={"X-OTX-API-KEY": key, "Accept": "application/json"},
+    )
     if response.status_code == 401:
         raise HTTPException(status_code=401, detail="OTX rejected the API key. Verify OTX_API_KEY.")
     if response.status_code == 404:
