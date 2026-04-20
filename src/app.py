@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,6 +17,7 @@ from fastapi.openapi.utils import get_openapi
 from fastmcp import FastMCP
 
 from src import __version__
+from src.common.http import get_client
 from src.common.openapi_compat import downgrade_to_3_0_1
 from src.tools import (
     abusech,
@@ -83,8 +85,46 @@ app.add_middleware(
 
 @app.get("/health", tags=["meta"], summary="Liveness probe")
 def health() -> dict[str, str]:
-    """Simple liveness probe used by Container Apps and Kubernetes."""
+    """Cheap liveness probe used by Container Apps and Kubernetes.
+
+    Returns immediately without touching upstreams or caches; a passing
+    response only means the ASGI loop is still serving requests. For a
+    deeper check that exercises an upstream call, use ``/ready``.
+    """
     return {"status": "ok", "version": __version__}
+
+
+@app.get("/ready", tags=["meta"], summary="Readiness probe")
+async def ready() -> dict[str, Any]:
+    """Readiness probe that exercises the shared HTTP client.
+
+    Performs a lightweight call to the shared ``httpx`` client (bound to
+    a static, low-cost endpoint) so that:
+
+    - cold-start failures (DNS misconfig, TLS trust store missing, ...)
+      surface as a 503 instead of a hung container; and
+    - load balancers can wait for the first replica to actually be able
+      to talk to the public internet before sending real traffic.
+
+    Container Apps probes should still hit ``/health`` for liveness; use
+    ``/ready`` for readiness only.
+    """
+    try:
+        client = await get_client()
+        # api.first.org is small, free, and has no rate limit on this path.
+        response = await client.get("https://api.first.org/data/v1/epss?cve=CVE-2024-3400")
+        upstream_ok = response.status_code < 500
+    except Exception as exc:  # noqa: BLE001 - probe must not raise
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"readiness probe failed: {type(exc).__name__}",
+        ) from exc
+    if not upstream_ok:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"upstream returned status={response.status_code}",
+        )
+    return {"status": "ready", "version": __version__}
 
 
 # --- OpenAPI 3.0.1 override --------------------------------------------------

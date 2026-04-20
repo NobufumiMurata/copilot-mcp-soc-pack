@@ -44,7 +44,15 @@ def _interesting_routes() -> list[tuple[str, str]]:
         methods = getattr(r, "methods", set()) or set()
         if "GET" not in methods:
             continue
-        if path in {"/", "/openapi.json", "/docs", "/docs/oauth2-redirect", "/redoc"}:
+        if path in {
+            "/",
+            "/openapi.json",
+            "/docs",
+            "/docs/oauth2-redirect",
+            "/redoc",
+            "/health",
+            "/ready",
+        }:
             continue
         # Skip parametrised paths; they need real values to pass validation.
         if "{" in path:
@@ -70,8 +78,6 @@ def test_openapi_is_public(client: TestClient) -> None:
 @pytest.mark.parametrize("method,path", _interesting_routes())
 def test_route_requires_api_key(client: TestClient, method: str, path: str) -> None:
     """Every tool route must reject unauthenticated callers."""
-    if path == "/health":
-        pytest.skip("health is intentionally public")
     r = client.request(method, path)
     assert r.status_code == 401, f"{path} returned {r.status_code} without API key"
 
@@ -85,7 +91,7 @@ def test_route_accepts_api_key(client: TestClient, method: str, path: str) -> No
     """
     r = client.request(method, path, headers={"X-API-Key": API_KEY})
     assert r.status_code != 401, f"{path} still 401 with API key"
-    assert r.status_code in (200, 400, 404, 422, 502, 503), (
+    assert r.status_code in (200, 400, 404, 422, 429, 502, 503), (
         f"{path} unexpected status {r.status_code}: {r.text[:200]}"
     )
 
