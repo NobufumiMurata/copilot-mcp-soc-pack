@@ -21,7 +21,7 @@ from fastapi import APIRouter, HTTPException, Query
 from fastmcp import FastMCP
 from pydantic import BaseModel
 
-from src.common.http import TTLCache, get_client
+from src.common.http import TTLCache, request_with_retry
 
 RANSOMWARE_LIVE_BASE = "https://api.ransomware.live/v2"
 
@@ -105,8 +105,10 @@ async def _get(path: str, ttl: int) -> Any:
     if cached is not None:
         return cached
 
-    client = await get_client()
-    response = await client.get(f"{RANSOMWARE_LIVE_BASE}{path}")
+    # 5xx and 429 are transient; retry via the shared backoff helper. After
+    # the retry budget is exhausted the final response (including 429 / 5xx)
+    # is returned and translated below.
+    response = await request_with_retry("GET", f"{RANSOMWARE_LIVE_BASE}{path}")
     if response.status_code == 404:
         return []
     if response.status_code == 429:

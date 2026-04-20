@@ -636,6 +636,31 @@ def test_ransomwarelive_recent_ok(mock_http):
     assert victims[0].group == "lockbit3"
 
 
+def test_ransomwarelive_recent_retries_5xx():
+    """ransomware.live recent victims should ride out a single transient 502."""
+    from src.common import http as http_module
+
+    payload = [{"victim": "Acme Corp", "group": "lockbit3"}]
+    responses = [httpx.Response(502), httpx.Response(200, json=payload)]
+    seen = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["n"] += 1
+        return responses.pop(0) if responses else httpx.Response(200, json=payload)
+
+    http_module._client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    import src.common.http as h
+
+    original_base = h.DEFAULT_BACKOFF_BASE
+    h.DEFAULT_BACKOFF_BASE = 0.0
+    try:
+        victims = _run(ransomwarelive._recent(limit=10))
+    finally:
+        h.DEFAULT_BACKOFF_BASE = original_base
+    assert len(victims) == 1
+    assert seen["n"] == 2
+
+
 # --- ATT&CK -----------------------------------------------------------------
 
 
