@@ -16,7 +16,7 @@ from fastapi import APIRouter, HTTPException, Query
 from fastmcp import FastMCP
 from pydantic import BaseModel
 
-from src.common.http import TTLCache, get_client
+from src.common.http import TTLCache, request_with_retry
 
 GREYNOISE_COMMUNITY_URL = "https://api.greynoise.io/v3/community/"
 GREYNOISE_API_KEY_ENV = "GREYNOISE_API_KEY"
@@ -52,8 +52,11 @@ async def _classify(ip: str) -> GreyNoiseClassification:
     if cached is not None:
         return GreyNoiseClassification(**cached)
 
-    client = await get_client()
-    response = await client.get(
+    # 5xx and 429 are transient; retry via the shared backoff helper. After
+    # the retry budget is exhausted the final response (including 429) is
+    # returned and translated below.
+    response = await request_with_retry(
+        "GET",
         GREYNOISE_COMMUNITY_URL + target,
         headers={"key": key, "Accept": "application/json"},
     )
