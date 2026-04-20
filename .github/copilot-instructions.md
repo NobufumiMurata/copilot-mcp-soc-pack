@@ -64,7 +64,10 @@ app.include_router(<new>.router, dependencies=[Depends(_require_api_key)])
 
 ### 3.4 外部 API 呼び出し
 
-- `src/common/http.py` の `get_client()` を使う (プロセス共有 `httpx.AsyncClient` + User-Agent 統一)
+- **HTTP リクエストは `src/common/http.py` の `request_with_retry()` を使う** (プロセス共有 `httpx.AsyncClient` + User-Agent 統一 + 5xx/429 を full-jitter exponential backoff でリトライ + Retry-After honouring)
+  - 生の `get_client()` は基本使わない。例外は WebSocket / streaming など `request_with_retry` でラップしにくいケースのみ
+  - シグネチャは `request_with_retry(method, url, *, headers=..., params=..., json=..., data=..., max_retries=2, ...)` で `httpx.Response` を返す
+- 401/404/429 など upstream の意味的ステータスは `request_with_retry` 後に `response.status_code` で判定し、`HTTPException` で翻訳する。429 は retry budget 使い切ったときのみ surface する
 - `TTLCache` を使ってレスポンスを必ずキャッシュ (デフォルト TTL は API ごとに設定、公式レート制限の半分以下を目安に)
 - API キーは **環境変数** から読む。必須なら未設定時に 503 を返して「どの変数を設定すべきか」をメッセージに含める
 - API キー用環境変数名は `<SERVICE>_AUTH_KEY` または `<SERVICE>_API_KEY` で統一 (例: `ABUSE_CH_AUTH_KEY`, `GREYNOISE_API_KEY`)
