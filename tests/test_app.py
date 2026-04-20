@@ -88,6 +88,9 @@ def test_openapi_schema_contains_tools():
     assert "/osv/query_package" in paths
     assert "/osv/query_commit" in paths
     assert "/osv/vuln/{vuln_id}" in paths
+    assert "/circl/hashlookup/md5/{hash_value}" in paths
+    assert "/circl/hashlookup/sha1/{hash_value}" in paths
+    assert "/circl/hashlookup/sha256/{hash_value}" in paths
 
 
 def test_openapi_is_3_0_1_for_security_copilot():
