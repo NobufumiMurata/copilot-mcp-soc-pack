@@ -1,6 +1,6 @@
 [project]
 name = "copilot-mcp-soc-pack"
-version = "0.1.0"
+version = "0.5.0"
 description = "Community SOC Pack for Microsoft Security Copilot — free-API MCP server and OpenAPI plugin"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -56,3 +56,11 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+files = ["src"]

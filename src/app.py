@@ -110,7 +110,7 @@ def _custom_openapi() -> dict:
     return schema
 
 
-app.openapi = _custom_openapi  # type: ignore[assignment]
+app.openapi = _custom_openapi  # type: ignore[method-assign]
 
 
 # --- Tool routers ------------------------------------------------------------
