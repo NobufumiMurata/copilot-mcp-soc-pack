@@ -165,6 +165,40 @@ def test_epss_score_empty_input_skips_http(mock_http):
     assert called is False
 
 
+def test_epss_score_retries_5xx():
+    """EPSS score lookup should ride out a transient FIRST 502."""
+    from src.common import http as http_module
+
+    payload = {
+        "data": [
+            {
+                "cve": "CVE-2024-3400",
+                "epss": "0.5",
+                "percentile": "0.9",
+                "date": "2026-04-19",
+            }
+        ]
+    }
+    responses = [httpx.Response(502), httpx.Response(200, json=payload)]
+    seen = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["n"] += 1
+        return responses.pop(0) if responses else httpx.Response(200, json=payload)
+
+    http_module._client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    import src.common.http as h
+
+    original_base = h.DEFAULT_BACKOFF_BASE
+    h.DEFAULT_BACKOFF_BASE = 0.0
+    try:
+        scores = _run(epss._epss_score(["CVE-2024-3400"]))
+    finally:
+        h.DEFAULT_BACKOFF_BASE = original_base
+    assert len(scores) == 1
+    assert seen["n"] == 2
+
+
 # --- AbuseIPDB --------------------------------------------------------------
 
 

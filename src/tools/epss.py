@@ -8,7 +8,7 @@ from fastapi import APIRouter, Query
 from fastmcp import FastMCP
 from pydantic import BaseModel
 
-from src.common.http import TTLCache, get_client
+from src.common.http import TTLCache, request_with_retry
 
 EPSS_URL = "https://api.first.org/data/v1/epss"
 
@@ -33,8 +33,9 @@ async def _epss_score(cve_ids: list[str]) -> list[EpssScore]:
     if cached is not None:
         return cached
 
-    client = await get_client()
-    response = await client.get(EPSS_URL, params={"cve": key})
+    # FIRST EPSS occasionally returns 5xx during edge maintenance; retry
+    # transient failures via the shared backoff helper.
+    response = await request_with_retry("GET", EPSS_URL, params={"cve": key})
     response.raise_for_status()
     payload = response.json()
 
