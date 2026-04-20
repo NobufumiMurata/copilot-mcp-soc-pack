@@ -1,6 +1,8 @@
+import httpx
 from fastapi.testclient import TestClient
 
 from src.app import app
+from src.common import http as http_module
 
 
 def test_health():
@@ -10,6 +12,46 @@ def test_health():
     body = response.json()
     assert body["status"] == "ok"
     assert "version" in body
+
+
+def test_ready_ok_when_upstream_returns_2xx():
+    http_module._client = httpx.AsyncClient(
+        transport=httpx.MockTransport(lambda r: httpx.Response(200, json={"data": []}))
+    )
+    try:
+        with TestClient(app) as client:
+            response = client.get("/ready")
+        assert response.status_code == 200
+        assert response.json()["status"] == "ready"
+    finally:
+        http_module._client = None
+
+
+def test_ready_503_when_upstream_5xx():
+    http_module._client = httpx.AsyncClient(
+        transport=httpx.MockTransport(lambda r: httpx.Response(503))
+    )
+    try:
+        with TestClient(app) as client:
+            response = client.get("/ready")
+        assert response.status_code == 503
+    finally:
+        http_module._client = None
+
+
+def test_ready_503_when_transport_error():
+    def boom(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("synthetic", request=request)
+
+    http_module._client = httpx.AsyncClient(transport=httpx.MockTransport(boom))
+    try:
+        with TestClient(app) as client:
+            response = client.get("/ready")
+        assert response.status_code == 503
+        assert "readiness probe failed" in response.json()["detail"]
+    finally:
+        http_module._client = None
+
 
 
 def test_openapi_schema_contains_tools():

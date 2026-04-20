@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Query
@@ -60,7 +60,7 @@ async def _kev_search(
     catalog = await _fetch_catalog()
     cutoff: date | None = None
     if since_days is not None:
-        cutoff = datetime.utcnow().date() - timedelta(days=since_days)
+        cutoff = datetime.now(UTC).date() - timedelta(days=since_days)
 
     results: list[KevEntry] = []
     for item in catalog.get("vulnerabilities", []):
