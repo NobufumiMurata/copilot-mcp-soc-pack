@@ -32,6 +32,7 @@ from src.tools import (
     attack,
     circl_hashlookup,
     crtsh,
+    d3fend,
     epss,
     greynoise,
     hibp,
@@ -929,4 +930,116 @@ def test_circl_hashlookup_retries_5xx():
     finally:
         h.DEFAULT_BACKOFF_BASE = original_base
     assert result.known is True
+    assert seen["n"] == 2
+
+# --- D3FEND -----------------------------------------------------------------
+
+
+_D3FEND_SAMPLE = {
+    "head": {"vars": ["off_tech_id", "def_tech_label", "def_tactic_label"]},
+    "results": {
+        "bindings": [
+            {
+                "off_tech_id": {"type": "literal", "value": "T1550.001"},
+                "def_tech_label": {"type": "literal", "value": "Token Binding"},
+                "def_tactic_label": {"type": "literal", "value": "Harden"},
+            },
+            {
+                "off_tech_id": {"type": "literal", "value": "T1059"},
+                "def_tech_label": {"type": "literal", "value": "Process Spawn Analysis"},
+                "def_tactic_label": {"type": "literal", "value": "Detect"},
+            },
+            {
+                "off_tech_id": {"type": "literal", "value": "T1059"},
+                "def_tech_label": {"type": "literal", "value": "Script Execution Analysis"},
+                "def_tactic_label": {"type": "literal", "value": "Detect"},
+            },
+        ]
+    },
+}
+
+
+def test_d3fend_defenses_for_attack_returns_matches(mock_http):
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.host == "d3fend.mitre.org"
+        return httpx.Response(200, json=_D3FEND_SAMPLE)
+
+    mock_http(handler)
+    result = _run(d3fend._defenses_for_attack("T1059"))
+    assert result.attack_technique_id == "T1059"
+    assert result.count == 2
+    labels = {row["def_tech_label"] for row in result.defenses}
+    assert labels == {"Process Spawn Analysis", "Script Execution Analysis"}
+
+
+def test_d3fend_defenses_for_attack_unknown_id_returns_empty(mock_http):
+    mock_http(lambda r: httpx.Response(200, json=_D3FEND_SAMPLE))
+    result = _run(d3fend._defenses_for_attack("T9999"))
+    assert result.count == 0
+    assert result.defenses == []
+
+
+def test_d3fend_defenses_for_attack_invalid_id_400(mock_http):
+    mock_http(lambda r: httpx.Response(200, json=_D3FEND_SAMPLE))
+    with pytest.raises(HTTPException) as exc:
+        _run(d3fend._defenses_for_attack("not-an-id"))
+    assert exc.value.status_code == 400
+
+
+def test_d3fend_attacks_for_defense_case_insensitive(mock_http):
+    mock_http(lambda r: httpx.Response(200, json=_D3FEND_SAMPLE))
+    result = _run(d3fend._attacks_for_defense("token binding"))
+    assert result.count == 1
+    assert result.attacks[0]["off_tech_id"] == "T1550.001"
+
+
+def test_d3fend_attacks_for_defense_empty_label_400(mock_http):
+    mock_http(lambda r: httpx.Response(200, json=_D3FEND_SAMPLE))
+    with pytest.raises(HTTPException) as exc:
+        _run(d3fend._attacks_for_defense("   "))
+    assert exc.value.status_code == 400
+
+
+def test_d3fend_5xx_returns_503(mock_http):
+    mock_http(lambda r: httpx.Response(503))
+    with pytest.raises(HTTPException) as exc:
+        _run(d3fend._defenses_for_attack("T1059"))
+    assert exc.value.status_code == 503
+
+
+def test_d3fend_caches_mappings_across_calls(mock_http):
+    """Second call must not refetch within the TTL window."""
+    seen = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["n"] += 1
+        return httpx.Response(200, json=_D3FEND_SAMPLE)
+
+    mock_http(handler)
+    _run(d3fend._defenses_for_attack("T1059"))
+    _run(d3fend._attacks_for_defense("Token Binding"))
+    assert seen["n"] == 1
+
+
+def test_d3fend_retries_5xx():
+    """D3FEND mappings fetch should ride out a single transient 503."""
+    from src.common import http as http_module
+
+    responses = [httpx.Response(503), httpx.Response(200, json=_D3FEND_SAMPLE)]
+    seen = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["n"] += 1
+        return responses.pop(0) if responses else httpx.Response(200, json=_D3FEND_SAMPLE)
+
+    http_module._client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    import src.common.http as h
+
+    original_base = h.DEFAULT_BACKOFF_BASE
+    h.DEFAULT_BACKOFF_BASE = 0.0
+    try:
+        result = _run(d3fend._defenses_for_attack("T1059"))
+    finally:
+        h.DEFAULT_BACKOFF_BASE = original_base
+    assert result.count == 2
     assert seen["n"] == 2

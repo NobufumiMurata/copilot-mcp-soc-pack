@@ -57,6 +57,10 @@ Descriptor:
       circl_hashlookup_md5, circl_hashlookup_sha1,
       circl_hashlookup_sha256 (CIRCL hashlookup). known=false is the
       SOC-actionable signal.
+    - Defensive-technique mappings against MITRE ATT&CK (which D3FEND
+      defenses counter ATT&CK X, or which ATT&CK techniques a given
+      defense covers): d3fend_defenses_for_attack,
+      d3fend_attacks_for_defense (MITRE D3FEND).
 
     Never invent data the tools did not return. Cite the source endpoint
     when presenting results (for example: "per CISA KEV", "per

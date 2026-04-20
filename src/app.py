@@ -26,6 +26,7 @@ from src.tools import (
     attack,
     circl_hashlookup,
     crtsh,
+    d3fend,
     epss,
     greynoise,
     hibp,
@@ -192,6 +193,7 @@ app.include_router(otx.router, dependencies=[Depends(_require_api_key)])
 app.include_router(hibp.router, dependencies=[Depends(_require_api_key)])
 app.include_router(osv.router, dependencies=[Depends(_require_api_key)])
 app.include_router(circl_hashlookup.router, dependencies=[Depends(_require_api_key)])
+app.include_router(d3fend.router, dependencies=[Depends(_require_api_key)])
 
 
 # --- MCP server --------------------------------------------------------------
@@ -212,5 +214,6 @@ otx.register_mcp_tools(mcp)
 hibp.register_mcp_tools(mcp)
 osv.register_mcp_tools(mcp)
 circl_hashlookup.register_mcp_tools(mcp)
+d3fend.register_mcp_tools(mcp)
 
 app.mount("/mcp", mcp.http_app())
