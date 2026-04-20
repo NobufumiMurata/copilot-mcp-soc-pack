@@ -30,6 +30,7 @@ from src.tools import (
     abusech,
     abuseipdb,
     attack,
+    circl_hashlookup,
     crtsh,
     epss,
     greynoise,
@@ -849,4 +850,83 @@ def test_osv_query_retries_5xx():
     finally:
         h.DEFAULT_BACKOFF_BASE = original_base
     assert len(result.vulns) == 1
+    assert seen["n"] == 2
+
+
+# --- CIRCL hashlookup -------------------------------------------------------
+
+
+def test_circl_hashlookup_known(mock_http):
+    md5 = "8ed4b4ed952526d89899e723f3488de4"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.host == "hashlookup.circl.lu"
+        assert request.url.path == f"/lookup/md5/{md5}"
+        return httpx.Response(
+            200,
+            json={"FileName": "kernel32.dll", "FileSize": "734120", "source": "NSRL"},
+        )
+
+    mock_http(handler)
+    result = _run(circl_hashlookup._lookup_hash("md5", md5.upper()))
+    assert result.known is True
+    assert result.algo == "md5"
+    assert result.hash == md5
+    assert result.metadata is not None
+    assert result.metadata["FileName"] == "kernel32.dll"
+
+
+def test_circl_hashlookup_unknown_returns_known_false(mock_http):
+    sha1 = "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+    mock_http(lambda r: httpx.Response(404))
+    result = _run(circl_hashlookup._lookup_hash("sha1", sha1))
+    assert result.known is False
+    assert result.metadata is None
+
+
+def test_circl_hashlookup_invalid_hex_400(mock_http):
+    mock_http(lambda r: httpx.Response(200, json={}))
+    with pytest.raises(HTTPException) as exc:
+        _run(circl_hashlookup._lookup_hash("md5", "not-a-hash"))
+    assert exc.value.status_code == 400
+
+
+def test_circl_hashlookup_wrong_length_400(mock_http):
+    mock_http(lambda r: httpx.Response(200, json={}))
+    with pytest.raises(HTTPException) as exc:
+        # SHA1-length value sent to MD5 endpoint
+        _run(circl_hashlookup._lookup_hash("md5", "a" * 40))
+    assert exc.value.status_code == 400
+
+
+def test_circl_hashlookup_5xx_returns_503(mock_http):
+    mock_http(lambda r: httpx.Response(502))
+    with pytest.raises(HTTPException) as exc:
+        _run(circl_hashlookup._lookup_hash("sha256", "a" * 64))
+    assert exc.value.status_code == 503
+
+
+def test_circl_hashlookup_retries_5xx():
+    """CIRCL hashlookup should ride out a single transient 503."""
+    from src.common import http as http_module
+
+    sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    payload = {"FileName": "empty", "source": "NSRL"}
+    responses = [httpx.Response(503), httpx.Response(200, json=payload)]
+    seen = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["n"] += 1
+        return responses.pop(0) if responses else httpx.Response(200, json=payload)
+
+    http_module._client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    import src.common.http as h
+
+    original_base = h.DEFAULT_BACKOFF_BASE
+    h.DEFAULT_BACKOFF_BASE = 0.0
+    try:
+        result = _run(circl_hashlookup._lookup_hash("sha256", sha256))
+    finally:
+        h.DEFAULT_BACKOFF_BASE = original_base
+    assert result.known is True
     assert seen["n"] == 2

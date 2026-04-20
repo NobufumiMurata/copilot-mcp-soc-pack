@@ -24,6 +24,7 @@ from src.tools import (
     abusech,
     abuseipdb,
     attack,
+    circl_hashlookup,
     crtsh,
     epss,
     greynoise,
@@ -190,6 +191,7 @@ app.include_router(ransomwarelive.router, dependencies=[Depends(_require_api_key
 app.include_router(otx.router, dependencies=[Depends(_require_api_key)])
 app.include_router(hibp.router, dependencies=[Depends(_require_api_key)])
 app.include_router(osv.router, dependencies=[Depends(_require_api_key)])
+app.include_router(circl_hashlookup.router, dependencies=[Depends(_require_api_key)])
 
 
 # --- MCP server --------------------------------------------------------------
@@ -209,5 +211,6 @@ ransomwarelive.register_mcp_tools(mcp)
 otx.register_mcp_tools(mcp)
 hibp.register_mcp_tools(mcp)
 osv.register_mcp_tools(mcp)
+circl_hashlookup.register_mcp_tools(mcp)
 
 app.mount("/mcp", mcp.http_app())
