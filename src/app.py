@@ -7,6 +7,7 @@ Exposes all SOC tools simultaneously as:
 
 from __future__ import annotations
 
+import hmac
 import os
 from contextlib import asynccontextmanager
 from typing import Any
@@ -33,6 +34,7 @@ from src.tools import (
 )
 
 API_KEY_ENV = "MCP_SOC_PACK_API_KEY"
+CORS_ORIGINS_ENV = "MCP_SOC_PACK_CORS_ORIGINS"
 
 
 def _require_api_key(request: Request) -> None:
@@ -42,6 +44,9 @@ def _require_api_key(request: Request) -> None:
     The Bearer form is required because Microsoft Security Copilot's OpenAI
     plugin loader only supports ``authorization_type: bearer`` for custom
     plugins (see https://learn.microsoft.com/en-us/copilot/security/custom-plugins).
+
+    Comparison uses :func:`hmac.compare_digest` to avoid leaking the key
+    via a timing side channel.
     """
     expected = os.environ.get(API_KEY_ENV)
     if not expected:
@@ -51,11 +56,28 @@ def _require_api_key(request: Request) -> None:
         auth = request.headers.get("Authorization", "")
         if auth.lower().startswith("bearer "):
             provided = auth.split(" ", 1)[1].strip()
-    if provided != expected:
+    if not provided or not hmac.compare_digest(provided, expected):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or missing API key (X-API-Key or Authorization: Bearer).",
         )
+
+
+def _resolve_cors_origins() -> list[str]:
+    """Resolve the CORS allow-list from ``MCP_SOC_PACK_CORS_ORIGINS``.
+
+    The env var is a comma-separated list of origins. The default is an
+    empty list (no browser origin allowed) which is the safest setting
+    for a service that is normally called server-to-server by Microsoft
+    Security Copilot or by an MCP client (which does not need CORS).
+
+    Set ``MCP_SOC_PACK_CORS_ORIGINS=*`` to restore the previous wildcard
+    behaviour for local development; do not use ``*`` in production.
+    """
+    raw = os.environ.get(CORS_ORIGINS_ENV, "").strip()
+    if not raw:
+        return []
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 
 @asynccontextmanager
@@ -75,12 +97,14 @@ app = FastAPI(
     lifespan=_lifespan,
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["*"],
-)
+_cors_origins = _resolve_cors_origins()
+if _cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_cors_origins,
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "X-API-Key"],
+    )
 
 
 @app.get("/health", tags=["meta"], summary="Liveness probe")

@@ -49,7 +49,8 @@ One `Deploy to Azure` click → Container Apps (scale-to-zero, < $5/month idle) 
 
 | Variable | Used by | Notes |
 |----------|---------|-------|
-| `MCP_SOC_PACK_API_KEY` | All routes | Shared secret for `X-API-Key` header. Leave unset in dev. |
+| `MCP_SOC_PACK_API_KEY` | All routes | Shared secret for `X-API-Key` header. Leave unset in dev. Compared with `hmac.compare_digest` to mitigate timing attacks. |
+| `MCP_SOC_PACK_CORS_ORIGINS` | CORS middleware | Comma-separated list of allowed browser origins (e.g. `https://app.example.com,https://localhost:3000`). **Default: empty** — no browser-origin requests allowed (server-to-server SC / MCP clients are not affected). Set to `*` only for local development. |
 | `ABUSE_CH_AUTH_KEY` | `/abusech/*` | Free key from <https://auth.abuse.ch/>. Required — abuse.ch rejects anonymous calls with HTTP 401. |
 | `GREYNOISE_API_KEY` | `/greynoise/*` | Free Community key from <https://viz.greynoise.io/signup> → *Account → API Key*. Required for GreyNoise classification. |
 | `ABUSEIPDB_API_KEY` | `/abuseipdb/*` | Free key from <https://www.abuseipdb.com/register> → *API → Create Key* (1000 req/day). Required for AbuseIPDB checks. |
