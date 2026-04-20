@@ -29,6 +29,7 @@ from src.tools import (
     greynoise,
     hibp,
     kev,
+    osv,
     otx,
     ransomwarelive,
 )
@@ -188,6 +189,7 @@ app.include_router(crtsh.router, dependencies=[Depends(_require_api_key)])
 app.include_router(ransomwarelive.router, dependencies=[Depends(_require_api_key)])
 app.include_router(otx.router, dependencies=[Depends(_require_api_key)])
 app.include_router(hibp.router, dependencies=[Depends(_require_api_key)])
+app.include_router(osv.router, dependencies=[Depends(_require_api_key)])
 
 
 # --- MCP server --------------------------------------------------------------
@@ -206,5 +208,6 @@ crtsh.register_mcp_tools(mcp)
 ransomwarelive.register_mcp_tools(mcp)
 otx.register_mcp_tools(mcp)
 hibp.register_mcp_tools(mcp)
+osv.register_mcp_tools(mcp)
 
 app.mount("/mcp", mcp.http_app())

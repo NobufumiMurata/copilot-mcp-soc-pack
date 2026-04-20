@@ -19,6 +19,7 @@ The goal is to lock in:
 from __future__ import annotations
 
 import asyncio
+import json
 from typing import Any
 
 import httpx
@@ -34,6 +35,7 @@ from src.tools import (
     greynoise,
     hibp,
     kev,
+    osv,
     otx,
     ransomwarelive,
 )
@@ -751,4 +753,100 @@ def test_attack_bundle_fetch_retries_5xx():
     finally:
         h.DEFAULT_BACKOFF_BASE = original_base
     assert technique is not None
+    assert seen["n"] == 2
+
+
+# --- OSV.dev ----------------------------------------------------------------
+
+
+def test_osv_query_package_ok(mock_http):
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.host == "api.osv.dev"
+        assert request.url.path == "/v1/query"
+        body = json.loads(request.content)
+        assert body["package"]["name"] == "jinja2"
+        assert body["package"]["ecosystem"] == "PyPI"
+        assert body["version"] == "3.1.4"
+        return httpx.Response(
+            200,
+            json={
+                "vulns": [
+                    {"id": "GHSA-h5c8-rqwp-cp95", "summary": "Jinja2 sandbox escape"}
+                ]
+            },
+        )
+
+    mock_http(handler)
+    result = _run(osv._query_package("jinja2", "PyPI", "3.1.4"))
+    assert len(result.vulns) == 1
+    assert result.vulns[0]["id"] == "GHSA-h5c8-rqwp-cp95"
+
+
+def test_osv_query_package_empty_inputs_400(mock_http):
+    mock_http(lambda r: httpx.Response(200, json={}))
+    with pytest.raises(HTTPException) as exc:
+        _run(osv._query_package("", "PyPI"))
+    assert exc.value.status_code == 400
+
+
+def test_osv_query_commit_ok(mock_http):
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        assert body == {"commit": "deadbeef"}
+        return httpx.Response(200, json={"vulns": []})
+
+    mock_http(handler)
+    result = _run(osv._query_commit("DEADBEEF"))
+    assert result.vulns == []
+
+
+def test_osv_get_vuln_ok(mock_http):
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/v1/vulns/GHSA-h5c8-rqwp-cp95"
+        return httpx.Response(
+            200,
+            json={"id": "GHSA-h5c8-rqwp-cp95", "summary": "Jinja2 sandbox escape"},
+        )
+
+    mock_http(handler)
+    record = _run(osv._get_vuln("GHSA-h5c8-rqwp-cp95"))
+    assert record["id"] == "GHSA-h5c8-rqwp-cp95"
+
+
+def test_osv_get_vuln_404(mock_http):
+    mock_http(lambda r: httpx.Response(404))
+    with pytest.raises(HTTPException) as exc:
+        _run(osv._get_vuln("OSV-DOES-NOT-EXIST"))
+    assert exc.value.status_code == 404
+
+
+def test_osv_query_5xx_returns_503(mock_http):
+    mock_http(lambda r: httpx.Response(502))
+    with pytest.raises(HTTPException) as exc:
+        _run(osv._query_package("jinja2", "PyPI"))
+    assert exc.value.status_code == 503
+
+
+def test_osv_query_retries_5xx():
+    """OSV /v1/query should ride out a single transient 502."""
+    from src.common import http as http_module
+
+    payload = {"vulns": [{"id": "GHSA-x", "summary": "stub"}]}
+    responses = [httpx.Response(502), httpx.Response(200, json=payload)]
+    seen = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["n"] += 1
+        return responses.pop(0) if responses else httpx.Response(200, json=payload)
+
+    http_module._client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    import src.common.http as h
+
+    original_base = h.DEFAULT_BACKOFF_BASE
+    h.DEFAULT_BACKOFF_BASE = 0.0
+    try:
+        result = _run(osv._query_package("jinja2", "PyPI"))
+    finally:
+        h.DEFAULT_BACKOFF_BASE = original_base
+    assert len(result.vulns) == 1
     assert seen["n"] == 2
