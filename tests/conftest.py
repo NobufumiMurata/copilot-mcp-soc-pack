@@ -33,6 +33,7 @@ from src.tools import (
     attack,
     circl_hashlookup,
     crtsh,
+    d3fend,
     epss,
     greynoise,
     hibp,
@@ -67,10 +68,18 @@ def _reset_shared_http_client() -> Iterator[None]:
     common.http._client = None  # type: ignore[attr-defined]
     for cache in _ALL_CACHES:
         cache._store.clear()  # type: ignore[attr-defined]
+    _reset_d3fend_state()
     yield
     common.http._client = None  # type: ignore[attr-defined]
     for cache in _ALL_CACHES:
         cache._store.clear()  # type: ignore[attr-defined]
+    _reset_d3fend_state()
+
+
+def _reset_d3fend_state() -> None:
+    d3fend._state["loaded_at"] = 0.0
+    d3fend._state["by_attack"] = {}
+    d3fend._state["by_defense"] = {}
 
 
 @pytest.fixture()

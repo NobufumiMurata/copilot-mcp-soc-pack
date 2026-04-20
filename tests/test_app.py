@@ -91,6 +91,8 @@ def test_openapi_schema_contains_tools():
     assert "/circl/hashlookup/md5/{hash_value}" in paths
     assert "/circl/hashlookup/sha1/{hash_value}" in paths
     assert "/circl/hashlookup/sha256/{hash_value}" in paths
+    assert "/d3fend/defenses_for_attack/{attack_technique_id}" in paths
+    assert "/d3fend/attacks_for_defense/{defense_label}" in paths
 
 
 def test_openapi_is_3_0_1_for_security_copilot():

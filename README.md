@@ -1,6 +1,6 @@
 # copilot-mcp-soc-pack
 
-**Community SOC Pack for Microsoft Security Copilot** — free-API MCP server and OpenAPI plugin that gives your SOC instant context from CISA KEV, FIRST EPSS, MITRE ATT&CK, abuse.ch (MalwareBazaar / ThreatFox / URLhaus), GreyNoise, AbuseIPDB, crt.sh, ransomware.live, AlienVault OTX, Have I Been Pwned, OSV.dev, and CIRCL hashlookup.
+**Community SOC Pack for Microsoft Security Copilot** — free-API MCP server and OpenAPI plugin that gives your SOC instant context from CISA KEV, FIRST EPSS, MITRE ATT&CK, abuse.ch (MalwareBazaar / ThreatFox / URLhaus), GreyNoise, AbuseIPDB, crt.sh, ransomware.live, AlienVault OTX, Have I Been Pwned, OSV.dev, CIRCL hashlookup, and MITRE D3FEND.
 
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FNobufumiMurata%2Fcopilot-mcp-soc-pack%2Fmaster%2Fdeploy%2Fazuredeploy.json)
 
@@ -36,6 +36,7 @@ One `Deploy to Azure` click → Container Apps (scale-to-zero, < $5/month idle) 
 | `hibp_breaches_by_domain` / `hibp_breach` | [Have I Been Pwned](https://haveibeenpwned.com/) | No | Public data-breach exposure for a domain | No |
 | `osv_query_package` / `osv_query_commit` / `osv_get_vuln` | [OSV.dev](https://osv.dev/) | No | Open source vulnerability lookup across PyPI / npm / Go / Maven / crates.io / RubyGems / NuGet / etc. | No |
 | `circl_hashlookup_md5` / `_sha1` / `_sha256` | [CIRCL hashlookup](https://hashlookup.circl.lu/) | No | NSRL known-good file lookup (whitelisting / triage) | No |
+| `d3fend_defenses_for_attack` / `d3fend_attacks_for_defense` | [MITRE D3FEND](https://d3fend.mitre.org/) | No | Defensive-technique mappings against MITRE ATT&CK | No |
 
 > **Why implement GreyNoise and AbuseIPDB anyway?** Microsoft ships official
 > plugins for both. Keeping the implementations here gives SOC teams a single
@@ -45,7 +46,7 @@ One `Deploy to Azure` click → Container Apps (scale-to-zero, < $5/month idle) 
 > disable the `greynoise_classify` and `abuseipdb_check` tools in your
 > plugin configuration and use the first-party plugins instead.
 
-**Currently implemented in v0.7**: KEV + EPSS + ATT&CK (v0.1) · Abuse.ch Pack (v0.2) · IP & Domain Reputation (v0.3, GreyNoise / AbuseIPDB / crt.sh) · ransomware.live (v0.4, recent/by_group/by_country/groups) · AlienVault OTX + Have I Been Pwned (v0.5) · reliability hardening + per-tool tests + Dependabot (v0.6) · OSV.dev + CIRCL hashlookup (v0.7).
+**Currently implemented in v0.7**: KEV + EPSS + ATT&CK (v0.1) · Abuse.ch Pack (v0.2) · IP & Domain Reputation (v0.3, GreyNoise / AbuseIPDB / crt.sh) · ransomware.live (v0.4, recent/by_group/by_country/groups) · AlienVault OTX + Have I Been Pwned (v0.5) · reliability hardening + per-tool tests + Dependabot (v0.6) · OSV.dev + CIRCL hashlookup + MITRE D3FEND (v0.7).
 
 ### Optional environment variables
 
@@ -83,6 +84,7 @@ flowchart LR
         HIBP[Have I Been Pwned]
         OSV[OSV.dev]
         CIRCL[CIRCL hashlookup]
+        D3FEND[MITRE D3FEND]
     end
 
     User -->|prompt| SC
@@ -101,6 +103,7 @@ flowchart LR
     App --> HIBP
     App --> OSV
     App --> CIRCL
+    App --> D3FEND
 ```
 
 A single container exposes the same tools two ways: as a Security Copilot custom plugin (REST + OpenAPI) and as an MCP server (SSE) for desktop clients. Upstream API keys are held as Container App secrets and never leave the container.
