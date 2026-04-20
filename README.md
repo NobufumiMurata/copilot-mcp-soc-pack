@@ -188,14 +188,13 @@ See [mcp-client-config/](./mcp-client-config/) for ready-to-use configurations.
 - [x] v0.5 AlienVault OTX + Have I Been Pwned, smoke harness, `#ExamplePrompts` planner hints, **Public Preview**
 - [x] v0.6 Reliability hardening (httpx retries with backoff, LRU-bounded TTL cache, `/ready` probe), per-tool unit tests, mypy in CI, Dependabot, single-source version, PR-based workflow
 - [ ] v0.7 Promptbook samples, structured eval harness, security hardening (CORS scoping, constant-time API-key compare), Application Insights tracing
-- [ ] v1.0 Hardening (Managed Identity inbound, full upstream retry coverage, custom metrics, Sentinel Workbook), GA based on Preview feedback
+- [ ] v1.0 Hardening (Managed Identity inbound, custom metrics, Sentinel Workbook), GA based on Preview feedback
 
 ## Known limitations
 
 This is a **Public Preview**. The following are intentional gaps today; PRs and issues welcome.
 
 - **Inbound auth is API key only.** No Managed Identity, no Entra ID inbound, no per-caller RBAC. Rotate the shared `MCP_SOC_PACK_API_KEY` regularly.
-- **No upstream retry / circuit breaker on every tool.** v0.6 ships the building block (`request_with_retry` in `src/common/http.py`) and uses it inside `/ready`, but the per-tool clients are not yet wired to it. Until then, an upstream 5xx still surfaces directly to Security Copilot.
 - **In-memory TTL cache only.** Cache resets on every cold start (which is expected at scale-to-zero). v0.6 added an LRU eviction cap (default 1024 entries) so long-running replicas no longer leak memory; there is still no Redis or shared cache across replicas.
 - **Single region.** The `Deploy to Azure` button provisions one Container Apps environment. There is no multi-region active-active sample yet.
 - **Observability is logs only.** Container App logs land in a Log Analytics workspace; there are no custom metrics, traces, or a Workbook yet.

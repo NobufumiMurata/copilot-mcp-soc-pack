@@ -402,6 +402,35 @@ def test_abusech_malwarebazaar_lookup_ok(mock_http, monkeypatch):
     assert samples[0].tags == ["emotet", "exe"]
 
 
+def test_abusech_post_retries_5xx(monkeypatch):
+    """abuse.ch _post should ride out a single transient 502."""
+    from src.common import http as http_module
+
+    monkeypatch.setenv(abusech.ABUSE_CH_AUTH_KEY_ENV, "k")
+    payload = {
+        "query_status": "ok",
+        "data": [{"sha256_hash": "a" * 64, "signature": "Emotet"}],
+    }
+    responses = [httpx.Response(502), httpx.Response(200, json=payload)]
+    seen = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["n"] += 1
+        return responses.pop(0) if responses else httpx.Response(200, json=payload)
+
+    http_module._client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    import src.common.http as h
+
+    original_base = h.DEFAULT_BACKOFF_BASE
+    h.DEFAULT_BACKOFF_BASE = 0.0
+    try:
+        samples = _run(abusech._mb_lookup("a" * 64))
+    finally:
+        h.DEFAULT_BACKOFF_BASE = original_base
+    assert len(samples) == 1
+    assert seen["n"] == 2
+
+
 # --- crt.sh -----------------------------------------------------------------
 
 

@@ -23,7 +23,7 @@ from fastapi import APIRouter, HTTPException, Query
 from fastmcp import FastMCP
 from pydantic import BaseModel
 
-from src.common.http import TTLCache, get_client
+from src.common.http import TTLCache, request_with_retry
 
 MALWAREBAZAAR_URL = "https://mb-api.abuse.ch/api/v1/"
 THREATFOX_URL = "https://threatfox-api.abuse.ch/api/v1/"
@@ -105,12 +105,14 @@ async def _post(
     if cached is not None:
         return cached
 
-    client = await get_client()
     headers = {"Auth-Key": key}
+    # 5xx and 429 are transient; retry via the shared backoff helper. After
+    # the retry budget is exhausted the final response is returned and any
+    # error status is translated below.
     if as_json:
-        response = await client.post(url, json=data, headers=headers)
+        response = await request_with_retry("POST", url, json=data, headers=headers)
     else:
-        response = await client.post(url, data=data, headers=headers)
+        response = await request_with_retry("POST", url, data=data, headers=headers)
     if response.status_code == 401:
         raise HTTPException(
             status_code=401,
