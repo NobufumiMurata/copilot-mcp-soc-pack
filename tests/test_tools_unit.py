@@ -539,3 +539,27 @@ def test_attack_search_substring(mock_http):
     mock_http(lambda r: httpx.Response(200, json=_ATTACK_STIX))
     results = _run(attack._attack_search("phish"))
     assert any(t.technique_id == "T1566" for t in results)
+
+
+def test_attack_bundle_fetch_retries_5xx():
+    """ATT&CK bundle fetch should ride out a single raw.githubusercontent 503."""
+    from src.common import http as http_module
+
+    responses = [httpx.Response(503), httpx.Response(200, json=_ATTACK_STIX)]
+    seen = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["n"] += 1
+        return responses.pop(0) if responses else httpx.Response(200, json=_ATTACK_STIX)
+
+    http_module._client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    import src.common.http as h
+
+    original_base = h.DEFAULT_BACKOFF_BASE
+    h.DEFAULT_BACKOFF_BASE = 0.0
+    try:
+        technique = _run(attack._attack_technique("T1566"))
+    finally:
+        h.DEFAULT_BACKOFF_BASE = original_base
+    assert technique is not None
+    assert seen["n"] == 2
