@@ -85,6 +85,9 @@ def test_openapi_schema_contains_tools():
     assert "/otx/url" in paths
     assert "/hibp/breaches_by_domain" in paths
     assert "/hibp/breach" in paths
+    assert "/osv/query_package" in paths
+    assert "/osv/query_commit" in paths
+    assert "/osv/vuln/{vuln_id}" in paths
 
 
 def test_openapi_is_3_0_1_for_security_copilot():

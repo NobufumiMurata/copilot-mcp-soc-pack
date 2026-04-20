@@ -50,6 +50,9 @@ Descriptor:
     - Public data-breach exposure for an organisation's domain or a
       named breach: hibp_breaches_by_domain, hibp_breach (Have I Been
       Pwned).
+    - Open-source software vulnerability lookup by package + version,
+      git commit, or vulnerability id (OSV / GHSA / CVE):
+      osv_query_package, osv_query_commit, osv_get_vuln (OSV.dev).
 
     Never invent data the tools did not return. Cite the source endpoint
     when presenting results (for example: "per CISA KEV", "per

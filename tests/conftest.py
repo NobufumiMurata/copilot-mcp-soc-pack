@@ -36,6 +36,7 @@ from src.tools import (
     greynoise,
     hibp,
     kev,
+    osv,
     otx,
     ransomwarelive,
 )
@@ -51,6 +52,8 @@ _ALL_CACHES = [
     greynoise._cache,
     hibp._cache,
     kev._cache,
+    osv._query_cache,
+    osv._vuln_cache,
     otx._cache,
     ransomwarelive._cache,
 ]
