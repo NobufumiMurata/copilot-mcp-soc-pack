@@ -7,7 +7,7 @@
 [![Build](https://github.com/NobufumiMurata/copilot-mcp-soc-pack/actions/workflows/build-push.yml/badge.svg)](https://github.com/NobufumiMurata/copilot-mcp-soc-pack/actions/workflows/build-push.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-> **Status**: **v0.5 Public Preview**. 10 tool groups (24 skills) live across REST + MCP, validated end-to-end against Microsoft Security Copilot. Looking for SOC feedback before tagging v1.0 — please open an issue or a discussion. Breaking changes possible until v1.0. Security disclosures: see [SECURITY.md](./SECURITY.md). See [ROADMAP](#roadmap) and [Known limitations](#known-limitations).
+> **Status**: **v0.6 Public Preview**. 10 tool groups (24 skills) live across REST + MCP, validated end-to-end against Microsoft Security Copilot. v0.6 hardens the foundation: per-tool unit tests, mypy in CI, Dependabot, httpx retries with exponential backoff, an LRU-bounded TTL cache, and a dedicated `/ready` probe. Looking for SOC feedback before tagging v1.0 — please open an issue or a discussion. Breaking changes possible until v1.0. Security disclosures: see [SECURITY.md](./SECURITY.md). See [ROADMAP](#roadmap) and [Known limitations](#known-limitations).
 
 ## Why this exists
 
@@ -43,7 +43,7 @@ One `Deploy to Azure` click → Container Apps (scale-to-zero, < $5/month idle) 
 > disable the `greynoise_classify` and `abuseipdb_check` tools in your
 > plugin configuration and use the first-party plugins instead.
 
-**Currently implemented in v0.4**: KEV + EPSS + ATT&CK (v0.1) · Abuse.ch Pack (v0.2) · IP & Domain Reputation (v0.3, GreyNoise / AbuseIPDB / crt.sh) · ransomware.live (v0.4, recent/by_group/by_country/groups) · AlienVault OTX + Have I Been Pwned (v0.5). Remaining tools land in v0.6.
+**Currently implemented in v0.6**: KEV + EPSS + ATT&CK (v0.1) · Abuse.ch Pack (v0.2) · IP & Domain Reputation (v0.3, GreyNoise / AbuseIPDB / crt.sh) · ransomware.live (v0.4, recent/by_group/by_country/groups) · AlienVault OTX + Have I Been Pwned (v0.5) · reliability hardening + per-tool tests + Dependabot (v0.6).
 
 ### Optional environment variables
 
@@ -185,21 +185,22 @@ See [mcp-client-config/](./mcp-client-config/) for ready-to-use configurations.
 - [x] v0.3 IP/Domain Reputation (GreyNoise, AbuseIPDB, crt.sh)
 - [x] v0.4 ransomware.live tools + Security Copilot integration (native manifest, OpenAPI 3.0.1 downgrade, reference `agent.yaml`)
 - [x] v0.5 AlienVault OTX + Have I Been Pwned, smoke harness, `#ExamplePrompts` planner hints, **Public Preview**
-- [ ] v0.6 Promptbook samples, structured eval harness, additional ATT&CK enrichment
-- [ ] v1.0 Hardening (Managed Identity inbound, retry/backoff, metrics), GA based on Preview feedback
+- [x] v0.6 Reliability hardening (httpx retries with backoff, LRU-bounded TTL cache, `/ready` probe), per-tool unit tests, mypy in CI, Dependabot, single-source version, PR-based workflow
+- [ ] v0.7 Promptbook samples, structured eval harness, security hardening (CORS scoping, constant-time API-key compare), Application Insights tracing
+- [ ] v1.0 Hardening (Managed Identity inbound, full upstream retry coverage, custom metrics, Sentinel Workbook), GA based on Preview feedback
 
 ## Known limitations
 
 This is a **Public Preview**. The following are intentional gaps today; PRs and issues welcome.
 
 - **Inbound auth is API key only.** No Managed Identity, no Entra ID inbound, no per-caller RBAC. Rotate the shared `MCP_SOC_PACK_API_KEY` regularly.
-- **No upstream retry / circuit breaker.** If an upstream API is degraded the call surfaces the upstream status (429 / 503) directly to Security Copilot.
-- **In-memory TTL cache only.** Cache resets on every cold start (which is expected at scale-to-zero). No Redis, no shared cache across replicas.
+- **No upstream retry / circuit breaker on every tool.** v0.6 ships the building block (`request_with_retry` in `src/common/http.py`) and uses it inside `/ready`, but the per-tool clients are not yet wired to it. Until then, an upstream 5xx still surfaces directly to Security Copilot.
+- **In-memory TTL cache only.** Cache resets on every cold start (which is expected at scale-to-zero). v0.6 added an LRU eviction cap (default 1024 entries) so long-running replicas no longer leak memory; there is still no Redis or shared cache across replicas.
 - **Single region.** The `Deploy to Azure` button provisions one Container Apps environment. There is no multi-region active-active sample yet.
 - **Observability is logs only.** Container App logs land in a Log Analytics workspace; there are no custom metrics, traces, or a Workbook yet.
 - **`/health` and `/openapi.json` are intentionally un-authenticated** to support Container App probes and OpenAPI ingestion. Restrict ingress (Front Door, IP allow-list, private endpoint) if this is unacceptable.
 - **OpenAPI is downgraded to 3.0.1 at runtime.** Microsoft Security Copilot rejects 3.1; downstream tools that rely on 3.1 features should consume the FastAPI source instead of `/openapi.json`.
-- **No Sentinel Workbook / Foundry agent sample bundled yet.** Planned for v0.6.
+- **No Sentinel Workbook / Foundry agent sample bundled yet.** Planned for v0.7+.
 - **Breaking changes possible until v1.0.** Pin the container image to a semver tag (`:0.5.0`), not `:latest`, and watch the release notes.
 
 ## Contributing
