@@ -15,7 +15,7 @@ from fastapi import APIRouter, HTTPException, Query
 from fastmcp import FastMCP
 from pydantic import BaseModel
 
-from src.common.http import TTLCache, get_client
+from src.common.http import TTLCache, request_with_retry
 
 CRTSH_URL = "https://crt.sh/"
 CRTSH_USER_AGENT = "copilot-mcp-soc-pack/0.3 (+https://github.com/NobufumiMurata/copilot-mcp-soc-pack)"
@@ -55,8 +55,10 @@ async def _subdomains(domain: str) -> CrtshSubdomainsResult:
     if cached is not None:
         return CrtshSubdomainsResult(**cached)
 
-    client = await get_client()
-    response = await client.get(
+    # crt.sh is frequently slow / overloaded; 5xx responses are transient.
+    # The shared backoff helper retries them before we surface a 503 below.
+    response = await request_with_retry(
+        "GET",
         CRTSH_URL,
         params={"q": f"%.{target}", "output": "json"},
         headers={"User-Agent": CRTSH_USER_AGENT, "Accept": "application/json"},

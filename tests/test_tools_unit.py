@@ -439,6 +439,31 @@ def test_crtsh_500_returns_503(mock_http):
     assert exc.value.status_code == 503
 
 
+def test_crtsh_retries_5xx():
+    """crt.sh subdomain lookup should ride out a single transient 502."""
+    from src.common import http as http_module
+
+    payload = [{"name_value": "www.example.com\nexample.com"}]
+    responses = [httpx.Response(502), httpx.Response(200, json=payload)]
+    seen = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["n"] += 1
+        return responses.pop(0) if responses else httpx.Response(200, json=payload)
+
+    http_module._client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    import src.common.http as h
+
+    original_base = h.DEFAULT_BACKOFF_BASE
+    h.DEFAULT_BACKOFF_BASE = 0.0
+    try:
+        result = _run(crtsh._subdomains("example.com"))
+    finally:
+        h.DEFAULT_BACKOFF_BASE = original_base
+    assert "www.example.com" in result.subdomains
+    assert seen["n"] == 2
+
+
 # --- HIBP -------------------------------------------------------------------
 
 
