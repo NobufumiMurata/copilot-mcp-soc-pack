@@ -7,7 +7,7 @@
 [![Build](https://github.com/NobufumiMurata/copilot-mcp-soc-pack/actions/workflows/build-push.yml/badge.svg)](https://github.com/NobufumiMurata/copilot-mcp-soc-pack/actions/workflows/build-push.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-> **Status**: **v0.6 Public Preview**. 10 tool groups (24 skills) live across REST + MCP, validated end-to-end against Microsoft Security Copilot. v0.6 hardens the foundation: per-tool unit tests, mypy in CI, Dependabot, httpx retries with exponential backoff, an LRU-bounded TTL cache, and a dedicated `/ready` probe. Looking for SOC feedback before tagging v1.0 — please open an issue or a discussion. Breaking changes possible until v1.0. Security disclosures: see [SECURITY.md](./SECURITY.md). See [ROADMAP](#roadmap) and [Known limitations](#known-limitations).
+> **Status**: **v0.7 Public Preview**. 13 tool groups (30 skills) live across REST + MCP, validated end-to-end against Microsoft Security Copilot. v0.7 expands coverage with OSV.dev (open-source vulnerability lookup), CIRCL hashlookup (NSRL known-good), and MITRE D3FEND (defensive-technique mappings to ATT&CK), and finishes the upstream-retry rollout (every tool now rides out transient 5xx / 429 with full-jitter exponential backoff). Looking for SOC feedback before tagging v1.0 — please open an issue or a discussion. Breaking changes possible until v1.0. Security disclosures: see [SECURITY.md](./SECURITY.md). See [ROADMAP](#roadmap) and [Known limitations](#known-limitations).
 
 ## Why this exists
 
@@ -196,7 +196,8 @@ See [mcp-client-config/](./mcp-client-config/) for ready-to-use configurations.
 - [x] v0.4 ransomware.live tools + Security Copilot integration (native manifest, OpenAPI 3.0.1 downgrade, reference `agent.yaml`)
 - [x] v0.5 AlienVault OTX + Have I Been Pwned, smoke harness, `#ExamplePrompts` planner hints, **Public Preview**
 - [x] v0.6 Reliability hardening (httpx retries with backoff, LRU-bounded TTL cache, `/ready` probe), per-tool unit tests, mypy in CI, Dependabot, single-source version, PR-based workflow
-- [ ] v0.7 Promptbook samples, structured eval harness, security hardening (CORS scoping, constant-time API-key compare), Application Insights tracing
+- [x] v0.7 OSV.dev + CIRCL hashlookup + MITRE D3FEND, full upstream-retry coverage across every tool, codified `request_with_retry` convention
+- [ ] v0.8 Promptbook samples, structured eval harness, Application Insights tracing
 - [ ] v1.0 Hardening (Managed Identity inbound, custom metrics, Sentinel Workbook), GA based on Preview feedback
 
 ## Known limitations
@@ -209,8 +210,8 @@ This is a **Public Preview**. The following are intentional gaps today; PRs and 
 - **Observability is logs only.** Container App logs land in a Log Analytics workspace; there are no custom metrics, traces, or a Workbook yet.
 - **`/health` and `/openapi.json` are intentionally un-authenticated** to support Container App probes and OpenAPI ingestion. Restrict ingress (Front Door, IP allow-list, private endpoint) if this is unacceptable.
 - **OpenAPI is downgraded to 3.0.1 at runtime.** Microsoft Security Copilot rejects 3.1; downstream tools that rely on 3.1 features should consume the FastAPI source instead of `/openapi.json`.
-- **No Sentinel Workbook / Foundry agent sample bundled yet.** Planned for v0.7+.
-- **Breaking changes possible until v1.0.** Pin the container image to a semver tag (`:0.5.0`), not `:latest`, and watch the release notes.
+- **No Sentinel Workbook / Foundry agent sample bundled yet.** Planned for v0.8+.
+- **Breaking changes possible until v1.0.** Pin the container image to a semver tag (`:0.7.0`), not `:latest`, and watch the release notes.
 
 ## Contributing
 
