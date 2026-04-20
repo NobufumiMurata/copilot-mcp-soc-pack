@@ -5,11 +5,25 @@
 # folder is kept for completeness but its auth section is rejected by SC
 # ("Unsupported auth type"); use this YAML instead.
 #
-# Upload steps:
+# IMPORTANT - SELF-HOST REQUIRED
+# ------------------------------
+# This file lives in a public OSS repo and is intentionally **NOT** wired to
+# any shared/upstream Container App. ``OpenApiSpecUrl`` below is a
+# placeholder. Each operator must:
+#   1. Deploy their own Container App (see the main README's Deploy to Azure
+#      button or `deploy/main.bicep`).
+#   2. Fork or download this file locally and replace ``<YOUR-CONTAINER-APP-FQDN>``
+#      with the FQDN of *their* Container App
+#      (e.g. ``copilot-mcp-soc-pack.<env-suffix>.<region>.azurecontainerapps.io``).
+#   3. Upload the **edited** file via Sources -> Custom -> Upload plugin.
+#
+# Do NOT "Upload as link" against the raw GitHub URL of this upstream file -
+# the placeholder URL will not resolve and the plugin registration will fail.
+#
+# Upload steps (after editing):
 #   1. Sources -> Custom -> Upload plugin
 #   2. Plugin type: **Security Copilot plugin** (NOT "OpenAI plugin")
-#   3. Upload as link: paste the raw GitHub URL of this file
-#       https://raw.githubusercontent.com/NobufumiMurata/copilot-mcp-soc-pack/master/sc-plugin/manifest.yaml
+#   3. Upload file: pick your edited local copy of this manifest
 #   4. Add -> Setup -> paste the shared API key (the value of $env:MCP_API_KEY)
 #
 # The deployed app accepts the same secret via either ``X-API-Key`` (used
@@ -76,7 +90,8 @@ Descriptor:
 SkillGroups:
   - Format: API
     Settings:
-      # Replace with your own FQDN if you fork. The deployed Container App
-      # serves an OpenAPI 3.0.1 spec (downgraded from FastAPI 3.1) at this
-      # URL and is gated by the X-API-Key header configured above.
-      OpenApiSpecUrl: https://copilot-mcp-soc-pack.salmonsea-6e7f9e16.japaneast.azurecontainerapps.io/openapi.json
+      # SELF-HOST: replace <YOUR-CONTAINER-APP-FQDN> with the FQDN of your
+      # own Container App. The deployed app serves an OpenAPI 3.0.1 spec
+      # (downgraded from FastAPI 3.1) at this URL and is gated by the
+      # X-API-Key header configured above.
+      OpenApiSpecUrl: https://<YOUR-CONTAINER-APP-FQDN>/openapi.json

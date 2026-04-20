@@ -56,11 +56,20 @@ If any of the above does not match, fix the deployment before continuing.
      plugin". Security Copilot's OpenAI-plugin loader does not yet support
      shared-secret authentication, so the native Descriptor + SkillGroups
      manifest in this repo is the supported path.
-5. Provide the manifest. Either option works:
-   - **Upload as link**: paste the raw GitHub URL of
-     [`sc-plugin/manifest.yaml`](../sc-plugin/manifest.yaml) and select the
-     file type `YAML`.
-   - **Upload file**: pick the local copy of `sc-plugin/manifest.yaml`.
+5. Provide the manifest. **You must edit the manifest first** — the
+   upstream copy ships with a placeholder ``<YOUR-CONTAINER-APP-FQDN>`` in
+   ``OpenApiSpecUrl`` to keep this OSS repo neutral, so uploading the raw
+   GitHub URL directly will fail.
+
+   Either option below works once you have a locally edited copy:
+   - **Recommended — Upload file**: download
+     [`sc-plugin/manifest.yaml`](../sc-plugin/manifest.yaml), replace
+     ``<YOUR-CONTAINER-APP-FQDN>`` with your Container App's FQDN
+     (e.g. ``copilot-mcp-soc-pack.<env-suffix>.<region>.azurecontainerapps.io``),
+     then upload the edited file.
+   - **Upload as link**: only use this if you fork the repo and commit your
+     edited ``sc-plugin/manifest.yaml`` to your own fork — paste the raw
+     GitHub URL of *your fork's* file, not the upstream NobufumiMurata one.
 
    > The OpenAI-format mirror at `sc-plugin/ai-plugin.json` is kept for
    > completeness, but Security Copilot rejects its `auth` block today
