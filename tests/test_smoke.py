@@ -19,22 +19,9 @@ from collections.abc import Iterator
 import pytest
 from fastapi.testclient import TestClient
 
-from src import common
 from src.app import app
 
 API_KEY = "smoke-test-key"
-
-
-@pytest.fixture(autouse=True)
-def _reset_shared_http_client() -> Iterator[None]:
-    """The module-level httpx.AsyncClient gets bound to the first event loop.
-
-    TestClient spins up a fresh loop per test, so the cached singleton must
-    be cleared between tests or the second one hits ``Event loop is closed``.
-    """
-    common.http._client = None  # type: ignore[attr-defined]
-    yield
-    common.http._client = None  # type: ignore[attr-defined]
 
 
 @pytest.fixture()
@@ -46,6 +33,7 @@ def client(monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
         monkeypatch.delenv(var, raising=False)
     with TestClient(app) as c:
         yield c
+
 
 
 def _interesting_routes() -> list[tuple[str, str]]:
