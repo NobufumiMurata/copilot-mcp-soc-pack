@@ -252,6 +252,32 @@ def test_abuseipdb_rate_limited(mock_http, monkeypatch):
     assert exc.value.status_code == 429
 
 
+def test_abuseipdb_retries_5xx(monkeypatch):
+    """AbuseIPDB check should ride out a single transient 503."""
+    from src.common import http as http_module
+
+    monkeypatch.setenv(abuseipdb.ABUSEIPDB_API_KEY_ENV, "k")
+    payload = {"data": {"ipAddress": "1.2.3.4", "abuseConfidenceScore": 10}}
+    responses = [httpx.Response(503), httpx.Response(200, json=payload)]
+    seen = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["n"] += 1
+        return responses.pop(0) if responses else httpx.Response(200, json=payload)
+
+    http_module._client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    import src.common.http as h
+
+    original_base = h.DEFAULT_BACKOFF_BASE
+    h.DEFAULT_BACKOFF_BASE = 0.0
+    try:
+        result = _run(abuseipdb._check("1.2.3.4", 90))
+    finally:
+        h.DEFAULT_BACKOFF_BASE = original_base
+    assert result.abuseConfidenceScore == 10
+    assert seen["n"] == 2
+
+
 # --- GreyNoise -------------------------------------------------------------
 
 

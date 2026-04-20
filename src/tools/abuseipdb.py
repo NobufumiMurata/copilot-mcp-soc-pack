@@ -15,7 +15,7 @@ from fastapi import APIRouter, HTTPException, Query
 from fastmcp import FastMCP
 from pydantic import BaseModel
 
-from src.common.http import TTLCache, get_client
+from src.common.http import TTLCache, request_with_retry
 
 ABUSEIPDB_CHECK_URL = "https://api.abuseipdb.com/api/v2/check"
 ABUSEIPDB_API_KEY_ENV = "ABUSEIPDB_API_KEY"
@@ -55,8 +55,11 @@ async def _check(ip: str, max_age_in_days: int) -> AbuseIPDBCheck:
     if cached is not None:
         return AbuseIPDBCheck(**cached)
 
-    client = await get_client()
-    response = await client.get(
+    # 5xx and 429 are transient; retry via the shared backoff helper. After
+    # the retry budget is exhausted the final response (including 429) is
+    # returned and translated below.
+    response = await request_with_retry(
+        "GET",
         ABUSEIPDB_CHECK_URL,
         params={"ipAddress": target, "maxAgeInDays": max_age_in_days},
         headers={"Key": key, "Accept": "application/json"},
