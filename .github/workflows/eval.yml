@@ -1,0 +1,62 @@
+name: eval
+
+# Live evaluation harness against a deployed (or operator-provided) SOC Pack
+# instance. Triggered manually or nightly. Skipped automatically when the
+# required repository secrets are not configured (e.g. on forks).
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: "Base URL to evaluate (overrides EVAL_TARGET_URL secret)"
+        required: false
+        type: string
+  schedule:
+    # 02:00 UTC every day. Adjust if your deployment is in a different region.
+    - cron: "0 2 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  live-eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Resolve target URL
+        id: target
+        env:
+          INPUT_URL: ${{ inputs.target_url }}
+          SECRET_URL: ${{ secrets.EVAL_TARGET_URL }}
+        run: |
+          if [ -n "$INPUT_URL" ]; then
+            echo "url=$INPUT_URL" >> "$GITHUB_OUTPUT"
+          elif [ -n "$SECRET_URL" ]; then
+            echo "url=$SECRET_URL" >> "$GITHUB_OUTPUT"
+          else
+            echo "url=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip when no target configured
+        if: steps.target.outputs.url == ''
+        run: |
+          echo "::warning::EVAL_TARGET_URL secret is not configured and no target_url input was provided. Skipping live eval."
+          exit 0
+
+      - name: Run live eval
+        if: steps.target.outputs.url != ''
+        env:
+          EVAL_TARGET_URL: ${{ steps.target.outputs.url }}
+          EVAL_API_KEY: ${{ secrets.EVAL_API_KEY }}
+        run: |
+          pytest tests/eval -m eval -v --no-header
