@@ -1,4 +1,5 @@
 import httpx
+import pytest
 from fastapi.testclient import TestClient
 
 from src.app import app
@@ -153,6 +154,37 @@ def test_openapi_is_3_0_1_for_security_copilot():
     assert vendor.get("nullable") is True
     assert vendor.get("type") == "string"
     assert "anyOf" not in vendor
+
+
+def test_openapi_passes_strict_3_0_1_validation():
+    """Strict 3.0.1 validation must pass.
+
+    SC's Agent Builder API Tool importer rejects specs with 3.1-only
+    constructs (e.g. ``examples`` array on a Schema Object) with
+    'Failed to import OpenAPI spec'. This test catches such regressions.
+    """
+    pytest.importorskip("openapi_spec_validator")
+    from openapi_spec_validator import validate
+
+    client = TestClient(app)
+    schema = client.get("/openapi.json").json()
+    validate(schema)
+
+
+def test_openapi_no_schema_examples_array():
+    """Pydantic v2 Field(examples=[...]) must be downgraded to ``example: <first>``.
+
+    The 3.1 ``examples`` array is illegal inside an OpenAPI 3.0 Schema
+    Object and breaks SC import. This test inspects the actual paths
+    parameters to prove the downgrade fired.
+    """
+    client = TestClient(app)
+    schema = client.get("/openapi.json").json()
+    cve_param = schema["paths"]["/kev/lookup"]["get"]["parameters"][0]
+    inner = cve_param["schema"]
+    assert "examples" not in inner, "schema.examples (plural) is illegal in OpenAPI 3.0.1"
+    # The example value should still be preserved in singular form.
+    assert inner.get("example") == "CVE-2024-3400"
 
 
 def test_key_gated_tools_hidden_when_env_unset(monkeypatch):
