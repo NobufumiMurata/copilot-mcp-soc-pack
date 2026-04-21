@@ -25,35 +25,33 @@
 #   3. Provide the API key when prompted (the value of MCP_SOC_PACK_API_KEY).
 
 Descriptor:
-  Name: CopilotMcpSocPack.IocTriage-v08preview
-  DisplayName: Copilot MCP SOC Pack (IOC Triage v0.8 preview)
+  Name: CopilotMcpSocPack.Agents-v08preview
+  DisplayName: Copilot MCP SOC Pack — Agents (v0.8 preview)
   Description: >-
-    OSS SOC enrichment skillset (CISA KEV, FIRST EPSS, MITRE ATT&CK,
-    abuse.ch, AbuseIPDB, OTX, OSV, CIRCL, D3FEND, ransomware.live)
-    bundled with reference triage agents.
-  SupportedAuthTypes:
-    - ApiKey
-  Authorization:
-    Type: APIKey
-    Key: X-API-Key
-    Location: Header
-    AuthScheme: ''
+    Reference triage agents (IOC enrichment, vulnerability triage,
+    hash triage) that orchestrate the SOC Pack API tools provided by
+    the companion `copilot_mcp_soc_pack` Custom plugin.
 
 SkillGroups:
   # ------------------------------------------------------------------
-  # API skill group: pulls all REST endpoints from the OpenAPI spec
-  # served by the Container App. After v0.8 operationId cleanup, each
-  # endpoint becomes a directly-callable skill named after its
-  # operationId (e.g. `kev_lookup`, `epss_score`, ...).
-  # ------------------------------------------------------------------
-  - Format: API
-    Settings:
-      OpenApiSpecUrl: https://<YOUR-CONTAINER-APP-FQDN>/openapi.json
-
-  # ------------------------------------------------------------------
   # AGENT skill group: defines reasoning entry points that orchestrate
-  # the API skills above. Each AGENT skill becomes a callable agent
+  # API tools coming from the companion Custom plugin (Descriptor.Name:
+  # copilot_mcp_soc_pack). Each AGENT skill becomes a callable agent
   # the user can invoke from the Security Copilot home prompt.
+  #
+  # NOTE: The API SkillGroup (Format: API) is intentionally NOT defined
+  # here. Microsoft Security Copilot does not allow an AGENT skill to
+  # bind ChildSkills from an API SkillGroup that lives in the same
+  # skillset; ChildSkills must reference skills from skillsets listed
+  # under the AgentDefinition's `RequiredSkillsets`. Symptom of the
+  # forbidden setup: the Agent Builder UI shows the API tools by name
+  # but Publish fails with "Invalid references: ...".
+  #
+  # Operators must therefore register both:
+  # 1. The Custom plugin (sc-plugin/manifest.yaml, Descriptor.Name:
+  #    copilot_mcp_soc_pack) which advertises the API operationIds.
+  # 2. This Agents skillset, uploaded via Build -> My agents ->
+  #    Upload YAML.
   # ------------------------------------------------------------------
   - Format: AGENT
     Skills:
@@ -225,12 +223,13 @@ AgentDefinitions:
     Publisher: copilot-mcp-soc-pack
     Product: SocPack
     RequiredSkillsets:
-      - CopilotMcpSocPack.IocTriage-v08preview
+      - CopilotMcpSocPack.Agents-v08preview
+      - copilot_mcp_soc_pack
     AgentSingleInstanceConstraint: None
     Triggers:
       - Name: Default
         DefaultPeriodSeconds: 0
-        ProcessSkill: CopilotMcpSocPack.IocTriage-v08preview.IocEnrichmentAgent
+        ProcessSkill: CopilotMcpSocPack.Agents-v08preview.IocEnrichmentAgent
 
   - Name: VulnerabilityTriageAgent-v08preview
     DisplayName: Vulnerability Triage Agent (SOC Pack)
@@ -240,12 +239,13 @@ AgentDefinitions:
     Publisher: copilot-mcp-soc-pack
     Product: SocPack
     RequiredSkillsets:
-      - CopilotMcpSocPack.IocTriage-v08preview
+      - CopilotMcpSocPack.Agents-v08preview
+      - copilot_mcp_soc_pack
     AgentSingleInstanceConstraint: None
     Triggers:
       - Name: Default
         DefaultPeriodSeconds: 0
-        ProcessSkill: CopilotMcpSocPack.IocTriage-v08preview.VulnerabilityTriageAgent
+        ProcessSkill: CopilotMcpSocPack.Agents-v08preview.VulnerabilityTriageAgent
 
   - Name: HashTriageAgent-v08preview
     DisplayName: Hash Triage Agent (SOC Pack)
@@ -255,9 +255,11 @@ AgentDefinitions:
     Publisher: copilot-mcp-soc-pack
     Product: SocPack
     RequiredSkillsets:
-      - CopilotMcpSocPack.IocTriage-v08preview
+      - CopilotMcpSocPack.Agents-v08preview
+      - copilot_mcp_soc_pack
     AgentSingleInstanceConstraint: None
     Triggers:
       - Name: Default
         DefaultPeriodSeconds: 0
-        ProcessSkill: CopilotMcpSocPack.IocTriage-v08preview.HashTriageAgent
+        ProcessSkill: CopilotMcpSocPack.Agents-v08preview.HashTriageAgent
+
