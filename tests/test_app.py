@@ -210,3 +210,37 @@ def test_openapi_has_bearer_security_scheme():
     assert schemes["ApiKeyAuth"]["in"] == "header"
     assert schemes["ApiKeyAuth"]["name"] == "X-API-Key"
     assert schema["security"] == [{"ApiKeyAuth": []}, {"BearerAuth": []}]
+
+
+def test_openapi_servers_block_from_env(monkeypatch):
+    """SC Agent Builder API Tool importer requires `servers[]` to resolve base URL."""
+    import importlib
+
+    from src import app as app_module
+
+    monkeypatch.setenv("MCP_SOC_PACK_PUBLIC_BASE_URL", "https://test.example.com/")
+    try:
+        importlib.reload(app_module)
+        client = TestClient(app_module.app)
+        schema = client.get("/openapi.json").json()
+        # Trailing slash must be stripped.
+        assert schema["servers"] == [{"url": "https://test.example.com"}]
+    finally:
+        monkeypatch.delenv("MCP_SOC_PACK_PUBLIC_BASE_URL", raising=False)
+        importlib.reload(app_module)
+
+
+def test_openapi_no_servers_when_env_unset(monkeypatch):
+    """Without MCP_SOC_PACK_PUBLIC_BASE_URL the spec must not invent a server URL."""
+    import importlib
+
+    from src import app as app_module
+
+    monkeypatch.delenv("MCP_SOC_PACK_PUBLIC_BASE_URL", raising=False)
+    try:
+        importlib.reload(app_module)
+        client = TestClient(app_module.app)
+        schema = client.get("/openapi.json").json()
+        assert "servers" not in schema
+    finally:
+        importlib.reload(app_module)
