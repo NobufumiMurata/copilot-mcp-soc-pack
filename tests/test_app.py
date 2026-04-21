@@ -95,6 +95,51 @@ def test_openapi_schema_contains_tools():
     assert "/d3fend/attacks_for_defense/{defense_label}" in paths
 
 
+def test_openapi_operation_ids_are_clean():
+    """Every advertised path/method must use an MCP-compatible operationId.
+
+    Security Copilot agent manifests reference API skills by operationId
+    in their AGENT ChildSkills list, so values must match the MCP tool
+    names exactly (e.g. ``kev_lookup``, not the FastAPI default
+    ``kev_lookup_endpoint_kev_lookup_get``).
+    """
+    client = TestClient(app)
+    schema = client.get("/openapi.json").json()
+    expected = {
+        "kev_lookup",
+        "kev_search",
+        "epss_score",
+        "attack_technique",
+        "attack_search",
+        "crtsh_subdomains",
+        "ransomware_live_recent",
+        "ransomware_live_by_group",
+        "ransomware_live_by_country",
+        "ransomware_live_groups",
+        "hibp_breaches_by_domain",
+        "hibp_breach",
+        "osv_query_package",
+        "osv_query_commit",
+        "osv_get_vuln",
+        "circl_hashlookup_md5",
+        "circl_hashlookup_sha1",
+        "circl_hashlookup_sha256",
+        "d3fend_defenses_for_attack",
+        "d3fend_attacks_for_defense",
+    }
+    actual = {
+        op["operationId"]
+        for path, methods in schema["paths"].items()
+        for method, op in methods.items()
+        if isinstance(op, dict) and "operationId" in op
+    }
+    missing = expected - actual
+    assert not missing, f"missing clean operationIds: {sorted(missing)}"
+    # Reject the FastAPI default mangling pattern entirely.
+    bad = [op for op in actual if op.endswith("_get") or "_endpoint_" in op]
+    assert not bad, f"unclean operationIds present: {sorted(bad)}"
+
+
 def test_openapi_is_3_0_1_for_security_copilot():
     """Security Copilot only accepts OpenAPI 3.0 / 3.0.1 specs."""
     client = TestClient(app)
