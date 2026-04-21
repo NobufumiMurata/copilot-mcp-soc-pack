@@ -1,9 +1,15 @@
 # Promptbook
 
-A curated set of prompts to validate and demonstrate the SOC Pack plugin
-inside Microsoft Security Copilot (SC).
+A curated set of prompts to validate and demonstrate the SOC Pack tools
+from either:
 
-The prompts are split into three tiers:
+- **Microsoft Security Copilot (SC)** standalone portal — using the
+  Custom plugin registered from [`sc-plugin/manifest.yaml`](../sc-plugin/manifest.yaml).
+- **MCP-aware agentic clients** — VS Code Copilot Chat in Agent Mode,
+  Claude Desktop, Cline, etc., using the configs in
+  [`mcp-client-config/`](../mcp-client-config/).
+
+The prompts are split into four tiers:
 
 1. **Single-skill smoke prompts** — one prompt invokes one skill. Used to
    confirm the plugin is registered and the API key works.
@@ -13,14 +19,19 @@ The prompts are split into three tiers:
    skips a step, prefer the *agent-style* version below.
 3. **Agent-style step-by-step prompts** — explicit numbered workflows
    that name each skill and the order. This is the most reliable way to
-   exercise composite flows today.
+   exercise composite flows from Security Copilot today.
+4. **MCP client prompts** — short, intent-only prompts that delegate
+   the multi-tool plan to a Claude Sonnet / GPT-4-class client.
+   Significantly less prescriptive than Tier 3 and produce better
+   triage output in practice (April 2026).
 
-> Composite flow caveat (observed Apr 2026): SC's planner sometimes
-> resolves multi-skill prompts to only the first matching skill and
-> stops, especially when the second skill depends on a value parsed out
-> of the first skill's free-form output (e.g. extracting a CVE id from
-> an OSV summary). Use the agent-style numbered prompts below when you
-> need a deterministic chain.
+> Composite flow caveat for Security Copilot (observed Apr 2026): SC's
+> planner sometimes resolves multi-skill prompts to only the first
+> matching skill and stops, especially when the second skill depends
+> on a value parsed out of the first skill's free-form output (e.g.
+> extracting a CVE id from an OSV summary). Use Tier 3 (deterministic
+> chains) or Tier 4 (MCP clients) when you need reliable multi-tool
+> behaviour.
 
 ---
 
@@ -155,19 +166,20 @@ PyPI の requests==2.20.0 と urllib3==1.24.1 を OSV.dev で照会し、
 ## Tier 3 — Agent-style step-by-step prompts
 
 These spell out each skill explicitly. Use these when Tier 2 prompts
-fail to chain. They are also the basis for the agents in
-[`sc-plugin/agent.yaml`](../sc-plugin/agent.yaml).
+fail to chain. They are also the basis for the reference agents in
+[`sc-plugin/agent.yaml`](../sc-plugin/agent.yaml) and the MS-schema
+manifest at [`sc-plugin/msschema/manifest.yaml`](../sc-plugin/msschema/manifest.yaml).
 
-> Agent Builder note (Apr 2026): the YAML in `sc-plugin/agent.yaml` is
-> a **legacy community shape** and is not compatible with the current
-> Microsoft agent manifest schema documented at
-> [Agent Manifest reference](https://learn.microsoft.com/en-us/copilot/security/developer/agent-manifest)
-> (`Descriptor` / `SkillGroups` / `AgentDefinitions`). Direct YAML import
-> therefore surfaces "No agent tools detected from YAML import". Use it
-> as a copy-paste source for `description` / `instructions`, and bind
-> tools manually via **Configure your agent → Tools → + Add tool**
-> after the Custom plugin is already registered. A v0.8 migration to
-> the official MS schema is planned.
+> Agent Builder note (Apr 2026): the v0.8 MS-schema manifest at
+> [`sc-plugin/msschema/manifest.yaml`](../sc-plugin/msschema/manifest.yaml)
+> uploads cleanly via **Build → My agents → Upload YAML** and the
+> agents publish & run end-to-end, but the SC standalone planner
+> still tends to call only **one** of the declared `ChildSkills` per
+> agent invocation. The legacy [`sc-plugin/agent.yaml`](../sc-plugin/agent.yaml)
+> remains a useful copy-paste source for `description` /
+> `instructions`. For reliable multi-tool runs today, drive the same
+> tools via an MCP client — see Tier 4 below and
+> [`docs/v0.8-msschema-migration.md`](./v0.8-msschema-migration.md).
 
 ### CVE → Defense (deterministic chain)
 ```
@@ -255,6 +267,87 @@ IP 185.220.101.1 について次の順で実行し、各スキルの返り値を
 
 ---
 
+## Tier 4 — MCP client prompts
+
+Use these from VS Code Copilot Chat (Agent Mode) or Claude Desktop after
+configuring the SOC Pack as an MCP server (see
+[`mcp-client-config/`](../mcp-client-config/)). The client LLM (Claude
+Sonnet / GPT-4-class) is far more capable at planning multi-tool calls
+than the SC standalone planner, so these prompts can be much shorter
+and more open-ended than Tier 3.
+
+> Tip: prefix each prompt with `#copilot-mcp-soc-pack` (VS Code) or
+> `@copilot-mcp-soc-pack` (Claude Desktop) to scope tool selection to
+> this server.
+
+### IP triage (4 sources)
+```
+#copilot-mcp-soc-pack 185.220.101.1 が悪意あるか調査して。
+AbuseIPDB、OTX、ThreatFox 全部当たって、最後に総合判定と
+推奨対処を出してください。
+```
+
+### CVE triage (KEV + EPSS + ATT&CK + D3FEND)
+```
+#copilot-mcp-soc-pack CVE-2024-3400 のリスクを評価して。
+KEV 該当性、EPSS、関連する MITRE ATT&CK technique、それを緩和できる
+D3FEND 防御技術まで一気に調べて、SOC Lead 向けにブリーフィング
+形式でまとめてください。
+```
+
+### Hash triage (whitelist → malware → community)
+```
+#copilot-mcp-soc-pack このハッシュを段階的に調査してください。
+SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+1. CIRCL hashlookup で NSRL 既知良性か
+2. 該当しなければ MalwareBazaar
+3. それでもヒットしなければ AlienVault OTX のパルス
+4. 結論を JSON で出してください
+```
+
+### Supply-chain triage (OSV + KEV)
+```
+#copilot-mcp-soc-pack 以下の依存に既知脆弱性があるか OSV.dev で確認、
+最も深刻な CVE が CISA KEV に載っていないかも見て、修正バージョンを
+表形式で出してください。
+
+- pypi: requests==2.20.0
+- pypi: urllib3==1.24.1
+- npm: lodash@4.17.15
+```
+
+### Ransomware briefing (ransomware.live + KEV)
+```
+#copilot-mcp-soc-pack 直近 30 日のランサムウェア被害から、
+攻撃が活発なグループ上位 5 つを ransomware.live で抽出。
+それぞれのグループが利用していると CISA KEV に記載のある CVE を
+紐付けて、SOC Lead 向けの脅威ブリーフィングを書いてください。
+```
+
+### Recursive enrichment (open-ended)
+```
+#copilot-mcp-soc-pack 以下の IOC バンドルを SOC アナリスト視点で
+トリアージしてください。型を自動判別して、利用可能な enrichment ツールを
+全部使い、最終的に「優先対応 IOC」と「無視してよい IOC」に仕分けて
+ください。
+
+185.220.101.1
+example.com
+44d88612fea8a8f36de82e1278abb02f
+https://urlhaus.abuse.ch/url/recent/
+CVE-2024-3400
+```
+
+### Domain attack-surface (crt.sh + ThreatFox)
+```
+#copilot-mcp-soc-pack example.com の証明書透明性ログから
+サブドメインを列挙し、その中に ThreatFox に登録されている悪意ある
+ホストが含まれているかチェックしてください。
+```
+
+---
+
 ## SC plugin reload checklist
 
 If you add new skills to the plugin (e.g. a new tool module) **after** SC
@@ -267,3 +360,21 @@ already has the plugin registered:
 3. アップロードは **必ずファイル指定** で行う。`Upload as link` に
    upstream OSS の raw URL を指定すると placeholder のままになる
    (`<YOUR-CONTAINER-APP-FQDN>` を解決できない)。
+
+---
+
+## MCP client reload checklist
+
+If you add new tool modules to the SOC Pack **after** an MCP client
+(VS Code, Claude Desktop, …) is already connected:
+
+1. Redeploy the Container App image so the new `@mcp.tool` entries are
+   exposed at `/mcp/`.
+2. In VS Code Copilot Chat: open the **🔧 tool picker** in the chat
+   and click **Refresh tools** on the `copilot-mcp-soc-pack` server,
+   or use `Developer: Reload Window`. The MCP client caches the tool
+   list per session.
+3. In Claude Desktop: fully quit and relaunch the app (the MCP server
+   list is loaded once at startup).
+4. Re-prompt and check that the new tool name shows up in the tool
+   picker before referencing it in a prompt.
