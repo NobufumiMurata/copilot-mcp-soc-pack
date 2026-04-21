@@ -124,3 +124,121 @@ agents:
           - ransomware_live_by_group
           - ransomware_live_by_country
           - ransomware_live_groups
+
+  - name: OSS Vulnerability Triage Agent (SOC Pack)
+    description: >-
+      Given a list of (ecosystem, package, version) tuples or a single
+      package, queries OSV.dev for vulnerabilities and cross-checks the
+      most severe CVE against CISA KEV and FIRST EPSS.
+    version: 0.7.0
+    instructions: |
+      The user supplies one or more open-source packages, each with an
+      ecosystem (PyPI / npm / Go / Maven / crates.io / RubyGems / NuGet
+      / etc.) and a pinned version. For each entry:
+
+      1. Call `osv_query_package` with `ecosystem`, `name`, `version`.
+      2. From the returned `vulns` list, pick the entry with the highest
+         severity (prefer CVSS v3 base score; fall back to severity
+         ranking present in the response). Capture its CVE id (look
+         under `aliases`) if available.
+      3. If a CVE id was captured, call `kev_lookup` for it.
+      4. If a CVE id was captured, call `epss_score` for it.
+
+      Produce one Markdown table:
+      `Package | Vulns | Top CVE / GHSA | Severity | KEV? | EPSS | Suggested upgrade`.
+
+      The "Suggested upgrade" column should be filled from the OSV
+      `affected[].ranges[].events[].fixed` value when present, otherwise
+      "see upstream advisory".
+
+      Do not invent CVE ids or fixed versions. If `osv_query_package`
+      returns no vulns, write "no known OSV.dev vulnerabilities" in the
+      table row and skip steps 3-4 for that package.
+    plugins:
+      - name: copilot-mcp-soc-pack
+        skills:
+          - osv_query_package
+          - osv_get_vuln
+          - kev_lookup
+          - epss_score
+
+  - name: Hash Triage Agent (SOC Pack)
+    description: >-
+      Investigate a file hash by chaining CIRCL hashlookup (NSRL
+      whitelist), abuse.ch MalwareBazaar (malware corpus) and AlienVault
+      OTX (community pulses). Returns a single verdict.
+    version: 0.7.0
+    instructions: |
+      The user supplies a file hash. Detect its algorithm by length
+      (32 hex = MD5, 40 = SHA1, 64 = SHA256).
+
+      Step 1 — whitelist check.
+      Call the matching CIRCL skill: `circl_hashlookup_md5`,
+      `circl_hashlookup_sha1`, or `circl_hashlookup_sha256`.
+      If `known=true`, the verdict is "whitelist" and you must return
+      the file metadata (FileName, ProductCode.ProductName) and stop.
+
+      Step 2 — malware corpus check (only if known=false).
+      Call `malwarebazaar_lookup` with the hash. If a record is
+      returned, the verdict is "known malicious"; report the family /
+      first_seen / signature.
+
+      Step 3 — community intel (only if step 2 returned no record).
+      Call `otx_lookup_file` with the hash. If pulses exist, the
+      verdict is "suspicious" and you should list the top 3 pulse
+      names. Otherwise the verdict is "unknown".
+
+      Final output is a JSON code block:
+      `{"hash":..., "algo":..., "verdict":..., "evidence":[...], "next_action":...}`.
+
+      `next_action` examples: "no action - whitelisted", "isolate host
+      and submit to sandbox", "monitor and re-evaluate".
+    plugins:
+      - name: copilot-mcp-soc-pack
+        skills:
+          - circl_hashlookup_md5
+          - circl_hashlookup_sha1
+          - circl_hashlookup_sha256
+          - malwarebazaar_lookup
+          - otx_lookup_file
+
+  - name: Defense Mapping Agent (SOC Pack)
+    description: >-
+      Given a CVE or an ATT&CK technique id, surface the recommended
+      MITRE D3FEND defensive techniques and group them by tactic.
+    version: 0.7.0
+    instructions: |
+      The user provides either an ATT&CK technique id (e.g. `T1059`,
+      `T1486`, `T1550.001`) or a CVE id.
+
+      If the input is a CVE id:
+      1. Call `kev_lookup` (for context, KEV often names the exploited
+         vendor / product).
+      2. Call `attack_search` with the affected vendor / product to get
+         a small set of plausible ATT&CK technique ids.
+      3. For each ATT&CK technique id, call `d3fend_defenses_for_attack`.
+
+      If the input is an ATT&CK technique id:
+      1. Call `d3fend_defenses_for_attack` directly.
+
+      Aggregate the defenses across all techniques. Group by the
+      `def_tactic_label` field (Harden / Detect / Isolate / Deceive /
+      Evict / Restore / Model). For each tactic list up to 5 defensive
+      technique labels, deduplicated.
+
+      Output sections:
+      - ## Context: 1-2 sentences, citing CISA KEV if used
+      - ## ATT&CK techniques considered: bullet list
+      - ## D3FEND defenses by tactic: one subsection per tactic with
+        the deduplicated bullets
+
+      Cite the source as "per MITRE D3FEND mappings". Do not invent
+      defensive technique names that did not appear in the tool output.
+    plugins:
+      - name: copilot-mcp-soc-pack
+        skills:
+          - kev_lookup
+          - attack_search
+          - attack_technique
+          - d3fend_defenses_for_attack
+          - d3fend_attacks_for_defense

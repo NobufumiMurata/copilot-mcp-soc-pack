@@ -19,3 +19,6 @@ htmlcov/
 !.vscode/settings.example.json
 .idea/
 *.log
+
+# Local-only operator files (never commit; contains real FQDNs/secrets)
+local/
