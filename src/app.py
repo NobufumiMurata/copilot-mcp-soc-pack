@@ -15,6 +15,7 @@ from typing import Any
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
+from fastapi.routing import APIRoute
 from fastmcp import FastMCP
 
 from src import __version__
@@ -89,6 +90,59 @@ async def _lifespan(app: FastAPI):
     yield
 
 
+# --- OpenAPI operationId clean-up --------------------------------------------
+# FastAPI's default operationId mangler produces ugly identifiers such as
+# ``kev_lookup_endpoint_kev_lookup_get`` which cannot be referenced from a
+# Microsoft Security Copilot agent manifest's ``ChildSkills`` list.
+# We expose every endpoint under the same name as the corresponding MCP
+# tool (``kev_lookup``, ``epss_score``, ...) so that the OpenAPI plugin
+# and the MCP server present a single, coherent skill catalogue.
+#
+# Some endpoint function names use shortened slugs (``mb_lookup_endpoint``,
+# ``tf_search_endpoint``, ``otx_ipv4_endpoint``, ...) that do not match
+# the public skill name; the explicit override map below resolves those
+# cases. For every other endpoint we strip the ``_endpoint`` suffix and
+# use the function name verbatim.
+_OPERATION_ID_OVERRIDES: dict[str, str] = {
+    # abuse.ch (abusech.py)
+    "mb_lookup_endpoint": "malwarebazaar_lookup",
+    "mb_recent_endpoint": "malwarebazaar_recent",
+    "tf_recent_endpoint": "threatfox_recent",
+    "tf_search_endpoint": "threatfox_search",
+    "uh_url_endpoint": "urlhaus_lookup_url",
+    "uh_host_endpoint": "urlhaus_lookup_host",
+    # CIRCL hashlookup (circl_hashlookup.py)
+    "circl_md5_endpoint": "circl_hashlookup_md5",
+    "circl_sha1_endpoint": "circl_hashlookup_sha1",
+    "circl_sha256_endpoint": "circl_hashlookup_sha256",
+    # ransomware.live (ransomwarelive.py)
+    "ransomware_recent_endpoint": "ransomware_live_recent",
+    "ransomware_by_group_endpoint": "ransomware_live_by_group",
+    "ransomware_by_country_endpoint": "ransomware_live_by_country",
+    "ransomware_groups_endpoint": "ransomware_live_groups",
+    # AlienVault OTX (otx.py)
+    "otx_ipv4_endpoint": "otx_lookup_ipv4",
+    "otx_ipv6_endpoint": "otx_lookup_ipv6",
+    "otx_domain_endpoint": "otx_lookup_domain",
+    "otx_file_endpoint": "otx_lookup_file",
+    "otx_url_endpoint": "otx_lookup_url",
+}
+
+
+def _clean_operation_id(route: APIRoute) -> str:
+    """Generate a clean, MCP-compatible operationId for an OpenAPI route.
+
+    Used as ``FastAPI(generate_unique_id_function=...)``. Falls back to
+    the route name (FastAPI's default basis) when no override is set.
+    """
+    name = route.name
+    if name in _OPERATION_ID_OVERRIDES:
+        return _OPERATION_ID_OVERRIDES[name]
+    if name.endswith("_endpoint"):
+        return name[: -len("_endpoint")]
+    return name
+
+
 app = FastAPI(
     title="Copilot MCP SOC Pack",
     version=__version__,
@@ -98,6 +152,7 @@ app = FastAPI(
         "ransomware.live) behind a single OpenAPI + MCP surface."
     ),
     lifespan=_lifespan,
+    generate_unique_id_function=_clean_operation_id,
 )
 
 _cors_origins = _resolve_cors_origins()
