@@ -155,7 +155,10 @@ Click the **Deploy to Azure** button above. You'll be prompted for:
 After deployment, copy the Container App FQDN (`https://<name>.<region>.azurecontainerapps.io`) and follow the step-by-step
 [Security Copilot registration runbook](./docs/security-copilot-registration.md)
 to register the plugin, wire up the `X-API-Key`, and (optionally) upload the
-three reference agents defined in [`sc-plugin/agent.yaml`](./sc-plugin/agent.yaml).
+six reference agents defined in [`sc-plugin/agent.yaml`](./sc-plugin/agent.yaml).
+For ready-to-paste validation prompts (single-skill smoke tests, planner-driven
+composite flows, and deterministic agent-style chains for v0.7 tools) see the
+[Promptbook](./docs/promptbook.md).
 
 ### Verify the deployment
 
