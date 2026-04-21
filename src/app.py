@@ -21,6 +21,7 @@ from fastmcp import FastMCP
 from src import __version__
 from src.common.http import get_client
 from src.common.openapi_compat import downgrade_to_3_0_1
+from src.common.tracing import configure_tracing
 from src.tools import (
     abusech,
     abuseipdb,
@@ -205,6 +206,11 @@ if _cors_origins:
         allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type", "X-API-Key"],
     )
+
+# Optional Application Insights tracing. No-op when
+# APPLICATIONINSIGHTS_CONNECTION_STRING is unset or the
+# `azure-monitor-opentelemetry` package is not installed.
+configure_tracing(app)
 
 
 @app.get("/health", tags=["meta"], summary="Liveness probe")

@@ -35,6 +35,8 @@ param abuseIpdbApiKey string = ''
 @description('Free AlienVault OTX API key (https://otx.alienvault.com/, Settings -> API Integration). Required for /otx/* endpoints. Leave empty to disable.')
 @secure()
 param otxApiKey string = ''
+@description('Provision a workspace-based Application Insights resource and inject APPLICATIONINSIGHTS_CONNECTION_STRING into the container. Requires the image to ship the optional `tracing` extra (default image does).')
+param enableAppInsights bool = false
 @description('Minimum number of replicas. Set 0 for scale-to-zero.')
 @minValue(0)
 @maxValue(5)
@@ -47,6 +49,7 @@ param maxReplicas int = 3
 
 var logAnalyticsName = '${containerAppName}-logs'
 var environmentName = '${containerAppName}-env'
+var appInsightsName = '${containerAppName}-ai'
 
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: logAnalyticsName
@@ -59,6 +62,19 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
     features: {
       enableLogAccessUsingOnlyResourcePermissions: true
     }
+  }
+}
+
+resource appInsights 'Microsoft.Insights/components@2020-02-02' = if (enableAppInsights) {
+  name: appInsightsName
+  location: location
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    WorkspaceResourceId: logAnalytics.id
+    IngestionMode: 'LogAnalytics'
+    publicNetworkAccessForIngestion: 'Enabled'
+    publicNetworkAccessForQuery: 'Enabled'
   }
 }
 
@@ -118,7 +134,13 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             name: 'otx-api-key'
             value: otxApiKey
           }
-        ]
+        ],
+        enableAppInsights ? [
+          {
+            name: 'applicationinsights-connection-string'
+            value: appInsights!.properties.ConnectionString
+          }
+        ] : []
       )
     }
     template: {
@@ -161,6 +183,16 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
                 secretRef: 'otx-api-key'
               }
             ],
+            enableAppInsights ? [
+              {
+                name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+                secretRef: 'applicationinsights-connection-string'
+              }
+              {
+                name: 'OTEL_SERVICE_NAME'
+                value: containerAppName
+              }
+            ] : [],
             // Public base URL injected into the OpenAPI `servers[]` block.
             // Required for Microsoft Security Copilot's Agent Builder
             // API Tool importer to resolve operation base URLs (the
@@ -207,3 +239,4 @@ output fqdn string = containerApp.properties.configuration.ingress.fqdn
 output endpoint string = 'https://${containerApp.properties.configuration.ingress.fqdn}'
 output openApiUrl string = 'https://${containerApp.properties.configuration.ingress.fqdn}/openapi.json'
 output mcpSseUrl string = 'https://${containerApp.properties.configuration.ingress.fqdn}/mcp/'
+output appInsightsName string = enableAppInsights ? appInsights!.name : ''

@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.42.1.51946",
-      "templateHash": "678075599944877869"
+      "version": "0.41.2.15936",
+      "templateHash": "16082163654774733647"
     }
   },
   "parameters": {
@@ -67,6 +67,13 @@
         "description": "Free AlienVault OTX API key (https://otx.alienvault.com/, Settings -> API Integration). Required for /otx/* endpoints. Leave empty to disable."
       }
     },
+    "enableAppInsights": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Provision a workspace-based Application Insights resource and inject APPLICATIONINSIGHTS_CONNECTION_STRING into the container. Requires the image to ship the optional `tracing` extra (default image does)."
+      }
+    },
     "minReplicas": {
       "type": "int",
       "defaultValue": 0,
@@ -88,7 +95,8 @@
   },
   "variables": {
     "logAnalyticsName": "[format('{0}-logs', parameters('containerAppName'))]",
-    "environmentName": "[format('{0}-env', parameters('containerAppName'))]"
+    "environmentName": "[format('{0}-env', parameters('containerAppName'))]",
+    "appInsightsName": "[format('{0}-ai', parameters('containerAppName'))]"
   },
   "resources": [
     {
@@ -105,6 +113,24 @@
           "enableLogAccessUsingOnlyResourcePermissions": true
         }
       }
+    },
+    {
+      "condition": "[parameters('enableAppInsights')]",
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "[variables('appInsightsName')]",
+      "location": "[parameters('location')]",
+      "kind": "web",
+      "properties": {
+        "Application_Type": "web",
+        "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsName'))]",
+        "IngestionMode": "LogAnalytics",
+        "publicNetworkAccessForIngestion": "Enabled",
+        "publicNetworkAccessForQuery": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsName'))]"
+      ]
     },
     {
       "type": "Microsoft.App/managedEnvironments",
@@ -138,7 +164,7 @@
             "transport": "auto",
             "allowInsecure": false
           },
-          "secrets": "[concat(if(empty(parameters('apiKey')), createArray(), createArray(createObject('name', 'api-key', 'value', parameters('apiKey')))), if(empty(parameters('abuseChAuthKey')), createArray(), createArray(createObject('name', 'abusech-auth-key', 'value', parameters('abuseChAuthKey')))), if(empty(parameters('greynoiseApiKey')), createArray(), createArray(createObject('name', 'greynoise-api-key', 'value', parameters('greynoiseApiKey')))), if(empty(parameters('abuseIpdbApiKey')), createArray(), createArray(createObject('name', 'abuseipdb-api-key', 'value', parameters('abuseIpdbApiKey')))), if(empty(parameters('otxApiKey')), createArray(), createArray(createObject('name', 'otx-api-key', 'value', parameters('otxApiKey')))))]"
+          "secrets": "[concat(if(empty(parameters('apiKey')), createArray(), createArray(createObject('name', 'api-key', 'value', parameters('apiKey')))), if(empty(parameters('abuseChAuthKey')), createArray(), createArray(createObject('name', 'abusech-auth-key', 'value', parameters('abuseChAuthKey')))), if(empty(parameters('greynoiseApiKey')), createArray(), createArray(createObject('name', 'greynoise-api-key', 'value', parameters('greynoiseApiKey')))), if(empty(parameters('abuseIpdbApiKey')), createArray(), createArray(createObject('name', 'abuseipdb-api-key', 'value', parameters('abuseIpdbApiKey')))), if(empty(parameters('otxApiKey')), createArray(), createArray(createObject('name', 'otx-api-key', 'value', parameters('otxApiKey')))), if(parameters('enableAppInsights'), createArray(createObject('name', 'applicationinsights-connection-string', 'value', reference(resourceId('Microsoft.Insights/components', variables('appInsightsName')), '2020-02-02').ConnectionString)), createArray()))]"
         },
         "template": {
           "containers": [
@@ -149,7 +175,7 @@
                 "cpu": "[json('0.5')]",
                 "memory": "1.0Gi"
               },
-              "env": "[concat(if(empty(parameters('apiKey')), createArray(), createArray(createObject('name', 'MCP_SOC_PACK_API_KEY', 'secretRef', 'api-key'))), if(empty(parameters('abuseChAuthKey')), createArray(), createArray(createObject('name', 'ABUSE_CH_AUTH_KEY', 'secretRef', 'abusech-auth-key'))), if(empty(parameters('greynoiseApiKey')), createArray(), createArray(createObject('name', 'GREYNOISE_API_KEY', 'secretRef', 'greynoise-api-key'))), if(empty(parameters('abuseIpdbApiKey')), createArray(), createArray(createObject('name', 'ABUSEIPDB_API_KEY', 'secretRef', 'abuseipdb-api-key'))), if(empty(parameters('otxApiKey')), createArray(), createArray(createObject('name', 'OTX_API_KEY', 'secretRef', 'otx-api-key'))))]",
+              "env": "[concat(if(empty(parameters('apiKey')), createArray(), createArray(createObject('name', 'MCP_SOC_PACK_API_KEY', 'secretRef', 'api-key'))), if(empty(parameters('abuseChAuthKey')), createArray(), createArray(createObject('name', 'ABUSE_CH_AUTH_KEY', 'secretRef', 'abusech-auth-key'))), if(empty(parameters('greynoiseApiKey')), createArray(), createArray(createObject('name', 'GREYNOISE_API_KEY', 'secretRef', 'greynoise-api-key'))), if(empty(parameters('abuseIpdbApiKey')), createArray(), createArray(createObject('name', 'ABUSEIPDB_API_KEY', 'secretRef', 'abuseipdb-api-key'))), if(empty(parameters('otxApiKey')), createArray(), createArray(createObject('name', 'OTX_API_KEY', 'secretRef', 'otx-api-key'))), if(parameters('enableAppInsights'), createArray(createObject('name', 'APPLICATIONINSIGHTS_CONNECTION_STRING', 'secretRef', 'applicationinsights-connection-string'), createObject('name', 'OTEL_SERVICE_NAME', 'value', parameters('containerAppName'))), createArray()), createArray(createObject('name', 'MCP_SOC_PACK_PUBLIC_BASE_URL', 'value', format('https://{0}.{1}', parameters('containerAppName'), reference(resourceId('Microsoft.App/managedEnvironments', variables('environmentName')), '2024-03-01').defaultDomain))))]",
               "probes": [
                 {
                   "type": "Liveness",
@@ -179,6 +205,7 @@
         }
       },
       "dependsOn": [
+        "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]",
         "[resourceId('Microsoft.App/managedEnvironments', variables('environmentName'))]"
       ]
     }
@@ -199,6 +226,10 @@
     "mcpSseUrl": {
       "type": "string",
       "value": "[format('https://{0}/mcp/', reference(resourceId('Microsoft.App/containerApps', parameters('containerAppName')), '2024-03-01').configuration.ingress.fqdn)]"
+    },
+    "appInsightsName": {
+      "type": "string",
+      "value": "[if(parameters('enableAppInsights'), variables('appInsightsName'), '')]"
     }
   }
 }
