@@ -3,26 +3,54 @@
 #
 # Reference: https://learn.microsoft.com/en-us/copilot/security/developer/agent-manifest
 #
-# This file is a v0.8 PREVIEW of a manifest written in the official
-# Microsoft Security Copilot agent manifest schema (Descriptor +
-# SkillGroups + AgentDefinitions). Once the prerequisites listed in
-# `docs/v0.8-msschema-migration.md` are completed, uploading this file
-# via Build -> My agents -> Upload YAML will register both the API
-# plugin (SkillGroups[Format: API]) and the AGENT skill in one shot,
-# without manual UI binding.
+# !!! STATUS: REFERENCE / NON-RECOMMENDED IMPLEMENTATION !!!
 #
-# STATUS: Not yet usable end-to-end. The OpenAPI spec served by the
-# Container App currently emits FastAPI auto-generated operationIds
-# such as `kev_lookup_endpoint_kev_lookup_get`. The `ChildSkills`
-# entries below assume cleaned operationIds (e.g. `kev_lookup`). See
-# the migration doc for the planned fix.
+# This manifest is kept in the repository as a working sample of the
+# official Microsoft Security Copilot agent manifest schema (Descriptor
+# + SkillGroups + AgentDefinitions). It uploads cleanly via
+# `Build -> My agents -> Upload YAML` and the resulting agents can be
+# published and run end-to-end.
 #
-# UPLOAD WORKFLOW (once prerequisites are in):
-#   1. Edit `<YOUR-CONTAINER-APP-FQDN>` and `<YOUR-API-KEY-SETTING-NAME>`
-#      below.
+# However, in the current Security Copilot standalone portal (April 2026)
+# the runtime behaviour falls short of what an MCP-aware client offers:
+#
+#   * The planner LLM tends to call only ONE of the declared ChildSkills
+#     per agent invocation and treat its output as the final answer.
+#     Recursive / multi-tool reasoning (call AbuseIPDB + OTX + ThreatFox
+#     and reconcile the verdicts) does not happen reliably.
+#   * Agent `Instructions` are static. There is no way to inject extra
+#     guidance at trigger time; the user prompt has to carry every hint
+#     ("call all three tools and reconcile the results").
+#   * `ChildSkills` is a "may-call" list, not a "must-call" list. The
+#     planner is free to ignore most of them.
+#
+# RECOMMENDED ALTERNATIVE for SOC operators:
+#
+#   Use the same Container App as an MCP server from a modern agentic
+#   client (VS Code Copilot Chat in Agent Mode, Claude Desktop, Cline,
+#   etc.). See `mcp-client-config/vscode.mcp.json` and
+#   `mcp-client-config/claude-desktop.json`. Those clients run on
+#   Claude Sonnet / GPT-4-class models with proper multi-tool planning
+#   and recursive reasoning, and produce far better triage output from
+#   the same set of SOC Pack tools.
+#
+# This file is therefore retained as:
+#   1. A reference for anyone building an MS-schema agent against the
+#      SOC Pack (operationId naming, RequiredSkillsets wiring,
+#      ChildSkills resolution, AgentDefinitions structure).
+#   2. A regression target for upcoming Security Copilot platform
+#      improvements (model upgrade, recursive planning, dynamic
+#      instructions).
+#
+# UPLOAD WORKFLOW (still works, just yields modest results):
+#   1. Edit `<YOUR-CONTAINER-APP-FQDN>` and the X-API-Key value below.
 #   2. Security Copilot -> Build -> My agents -> Upload YAML -> select
 #      this file.
-#   3. Provide the API key when prompted (the value of MCP_SOC_PACK_API_KEY).
+#   3. Provide the API key when prompted (the value of
+#      MCP_SOC_PACK_API_KEY).
+#   4. When invoking the agent, put the entire orchestration prompt
+#      ("call X, Y, Z and reconcile") into the `indicators` /
+#      `cve_ids` / `file_hash` Input field, not just the raw IOC.
 
 Descriptor:
   Name: CopilotMcpSocPack.Agents-v08preview
