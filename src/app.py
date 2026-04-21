@@ -181,19 +181,43 @@ app.openapi = _custom_openapi  # type: ignore[method-assign]
 
 
 # --- Tool routers ------------------------------------------------------------
+# Tools that require an upstream API key are only registered when their
+# corresponding env var is present. This keeps the OpenAPI surface (and
+# the MCP tool list) honest: Security Copilot's planner picks skills from
+# the advertised OpenAPI; if a skill is advertised but always returns 503
+# because no key is configured, the planner treats the whole multi-skill
+# request as failed ("Couldn't complete your request"). By hiding the
+# unconfigured skill we give the planner a clean menu of working tools.
+import logging as _logging  # noqa: E402
+
+_app_log = _logging.getLogger(__name__)
+
+_KEY_GATED_TOOLS: list[tuple[str, str, Any]] = [
+    ("GREYNOISE_API_KEY", "greynoise", greynoise),
+    ("ABUSEIPDB_API_KEY", "abuseipdb", abuseipdb),
+    ("ABUSE_CH_AUTH_KEY", "abusech (MalwareBazaar / ThreatFox / URLhaus)", abusech),
+    ("OTX_API_KEY", "otx", otx),
+]
+
 app.include_router(kev.router, dependencies=[Depends(_require_api_key)])
 app.include_router(epss.router, dependencies=[Depends(_require_api_key)])
 app.include_router(attack.router, dependencies=[Depends(_require_api_key)])
-app.include_router(abusech.router, dependencies=[Depends(_require_api_key)])
-app.include_router(greynoise.router, dependencies=[Depends(_require_api_key)])
-app.include_router(abuseipdb.router, dependencies=[Depends(_require_api_key)])
 app.include_router(crtsh.router, dependencies=[Depends(_require_api_key)])
 app.include_router(ransomwarelive.router, dependencies=[Depends(_require_api_key)])
-app.include_router(otx.router, dependencies=[Depends(_require_api_key)])
 app.include_router(hibp.router, dependencies=[Depends(_require_api_key)])
 app.include_router(osv.router, dependencies=[Depends(_require_api_key)])
 app.include_router(circl_hashlookup.router, dependencies=[Depends(_require_api_key)])
 app.include_router(d3fend.router, dependencies=[Depends(_require_api_key)])
+
+for _env_var, _label, _module in _KEY_GATED_TOOLS:
+    if os.environ.get(_env_var):
+        app.include_router(_module.router, dependencies=[Depends(_require_api_key)])
+    else:
+        _app_log.warning(
+            "Skill group %s disabled: %s is not set. Set this env var to enable it.",
+            _label,
+            _env_var,
+        )
 
 
 # --- MCP server --------------------------------------------------------------
@@ -204,16 +228,16 @@ mcp = FastMCP(name="copilot-mcp-soc-pack")
 
 kev.register_mcp_tools(mcp)
 epss.register_mcp_tools(mcp)
-abusech.register_mcp_tools(mcp)
 attack.register_mcp_tools(mcp)
-greynoise.register_mcp_tools(mcp)
-abuseipdb.register_mcp_tools(mcp)
 crtsh.register_mcp_tools(mcp)
 ransomwarelive.register_mcp_tools(mcp)
-otx.register_mcp_tools(mcp)
 hibp.register_mcp_tools(mcp)
 osv.register_mcp_tools(mcp)
 circl_hashlookup.register_mcp_tools(mcp)
 d3fend.register_mcp_tools(mcp)
+
+for _env_var, _label, _module in _KEY_GATED_TOOLS:
+    if os.environ.get(_env_var):
+        _module.register_mcp_tools(mcp)
 
 app.mount("/mcp", mcp.http_app())
