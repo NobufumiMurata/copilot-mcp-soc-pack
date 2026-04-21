@@ -202,4 +202,11 @@ def test_openapi_has_bearer_security_scheme():
     schemes = schema["components"]["securitySchemes"]
     assert schemes["BearerAuth"]["type"] == "http"
     assert schemes["BearerAuth"]["scheme"] == "bearer"
-    assert schema["security"] == [{"BearerAuth": []}]
+    # ApiKeyAuth must be advertised first so Microsoft Security Copilot's
+    # MS-schema agent manifest (Authorization Type: APIKey) can resolve
+    # the API SkillGroup import. BearerAuth is kept as a fallback for the
+    # legacy Custom plugin upload path.
+    assert schemes["ApiKeyAuth"]["type"] == "apiKey"
+    assert schemes["ApiKeyAuth"]["in"] == "header"
+    assert schemes["ApiKeyAuth"]["name"] == "X-API-Key"
+    assert schema["security"] == [{"ApiKeyAuth": []}, {"BearerAuth": []}]
