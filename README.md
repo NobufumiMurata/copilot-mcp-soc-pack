@@ -59,6 +59,17 @@ One `Deploy to Azure` click → Container Apps (scale-to-zero, < $5/month idle) 
 | `ABUSEIPDB_API_KEY` | `/abuseipdb/*` | Free key from <https://www.abuseipdb.com/register> → *API → Create Key* (1000 req/day). Required for AbuseIPDB checks. |
 | `OTX_API_KEY` | `/otx/*` | Free key from <https://otx.alienvault.com/> → *Settings → API Integration*. Required for AlienVault OTX indicator lookups. |
 
+> **Conditional registration**: Tools requiring an upstream key
+> (`abusech`, `greynoise`, `abuseipdb`, `otx`) are registered **only**
+> when their corresponding env var is set. Unset tools are absent from
+> the OpenAPI surface and the MCP tool list. This is intentional:
+> Security Copilot's planner aborts a multi-skill prompt when any
+> advertised skill returns 503 (e.g. "missing API key"), so hiding
+> unconfigured skills keeps the planner working on partial deployments.
+> Note that the GreyNoise Community API key is no longer obtainable for
+> new accounts as of 2026, so a fresh deployment will simply omit
+> `/greynoise/*` until you supply your own key.
+
 ## Architecture
 
 ```mermaid

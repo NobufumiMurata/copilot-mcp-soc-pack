@@ -19,15 +19,28 @@ from a clean cache state.
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable, Iterator
 from typing import Any
 
 import httpx
 import pytest
 
-from src import common
-from src.common import http as http_module
-from src.tools import (
+# IMPORTANT: set the per-tool API-key env vars BEFORE importing src.app
+# (transitively imported via src.common). The app uses presence of these
+# env vars to decide whether to register the corresponding tool routers,
+# so the test suite must opt-in to the full surface.
+for _env_var in (
+    "GREYNOISE_API_KEY",
+    "ABUSEIPDB_API_KEY",
+    "ABUSE_CH_AUTH_KEY",
+    "OTX_API_KEY",
+):
+    os.environ.setdefault(_env_var, "test-fixture-key")
+
+from src import common  # noqa: E402
+from src.common import http as http_module  # noqa: E402
+from src.tools import (  # noqa: E402
     abusech,
     abuseipdb,
     attack,

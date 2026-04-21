@@ -110,6 +110,47 @@ def test_openapi_is_3_0_1_for_security_copilot():
     assert "anyOf" not in vendor
 
 
+def test_key_gated_tools_hidden_when_env_unset(monkeypatch):
+    """Tools that require an upstream key are excluded from OpenAPI when
+    the env var is missing. This protects SC's planner: an advertised but
+    permanently-503 skill causes the whole multi-skill prompt to fail.
+    """
+    import importlib
+
+    for env in (
+        "GREYNOISE_API_KEY",
+        "ABUSEIPDB_API_KEY",
+        "ABUSE_CH_AUTH_KEY",
+        "OTX_API_KEY",
+    ):
+        monkeypatch.delenv(env, raising=False)
+
+    import src.app as app_module
+
+    importlib.reload(app_module)
+    try:
+        schema = TestClient(app_module.app).get("/openapi.json").json()
+        paths = schema["paths"]
+        # Always-on tools are still there.
+        assert "/kev/lookup" in paths
+        assert "/d3fend/defenses_for_attack/{attack_technique_id}" in paths
+        # Key-gated tools are absent.
+        assert "/greynoise/classify" not in paths
+        assert "/abuseipdb/check" not in paths
+        assert "/abusech/threatfox/recent" not in paths
+        assert "/otx/ipv4" not in paths
+    finally:
+        # Restore env vars and reload so subsequent tests see the full surface.
+        for env in (
+            "GREYNOISE_API_KEY",
+            "ABUSEIPDB_API_KEY",
+            "ABUSE_CH_AUTH_KEY",
+            "OTX_API_KEY",
+        ):
+            monkeypatch.setenv(env, "test-fixture-key")
+        importlib.reload(app_module)
+
+
 def test_openapi_has_bearer_security_scheme():
     client = TestClient(app)
     schema = client.get("/openapi.json").json()
