@@ -171,6 +171,12 @@ For ready-to-paste validation prompts (single-skill smoke tests, planner-driven
 composite flows, and deterministic agent-style chains for v0.7 tools) see the
 [Promptbook](./docs/promptbook.md).
 
+> **Coming in v0.8**: a one-shot **Build → My agents → Upload YAML** flow using
+> the official Microsoft [Agent Manifest schema](https://learn.microsoft.com/en-us/copilot/security/developer/agent-manifest)
+> (Descriptor / SkillGroups / AgentDefinitions) — see the preview manifest at
+> [`sc-plugin/msschema/manifest.yaml`](./sc-plugin/msschema/manifest.yaml) and
+> the migration plan in [`docs/v0.8-msschema-migration.md`](./docs/v0.8-msschema-migration.md).
+
 ### Verify the deployment
 
 `/health` and `/openapi.json` are intentionally **un-authenticated** so they

@@ -1,0 +1,263 @@
+# Microsoft Security Copilot agent manifest (OFFICIAL SCHEMA, v0.8 PREVIEW)
+# ===========================================================================
+#
+# Reference: https://learn.microsoft.com/en-us/copilot/security/developer/agent-manifest
+#
+# This file is a v0.8 PREVIEW of a manifest written in the official
+# Microsoft Security Copilot agent manifest schema (Descriptor +
+# SkillGroups + AgentDefinitions). Once the prerequisites listed in
+# `docs/v0.8-msschema-migration.md` are completed, uploading this file
+# via Build -> My agents -> Upload YAML will register both the API
+# plugin (SkillGroups[Format: API]) and the AGENT skill in one shot,
+# without manual UI binding.
+#
+# STATUS: Not yet usable end-to-end. The OpenAPI spec served by the
+# Container App currently emits FastAPI auto-generated operationIds
+# such as `kev_lookup_endpoint_kev_lookup_get`. The `ChildSkills`
+# entries below assume cleaned operationIds (e.g. `kev_lookup`). See
+# the migration doc for the planned fix.
+#
+# UPLOAD WORKFLOW (once prerequisites are in):
+#   1. Edit `<YOUR-CONTAINER-APP-FQDN>` and `<YOUR-API-KEY-SETTING-NAME>`
+#      below.
+#   2. Security Copilot -> Build -> My agents -> Upload YAML -> select
+#      this file.
+#   3. Provide the API key when prompted (the value of MCP_SOC_PACK_API_KEY).
+
+Descriptor:
+  Name: CopilotMcpSocPack.IocTriage-v08preview
+  DisplayName: Copilot MCP SOC Pack (IOC Triage v0.8 preview)
+  Description: >-
+    OSS SOC enrichment skillset (CISA KEV, FIRST EPSS, MITRE ATT&CK,
+    abuse.ch, AbuseIPDB, OTX, OSV, CIRCL, D3FEND, ransomware.live)
+    bundled with reference triage agents.
+  SupportedAuthTypes:
+    - ApiKey
+  Authorization:
+    Type: APIKey
+    Key: X-API-Key
+    Location: Header
+    AuthScheme: ''
+
+SkillGroups:
+  # ------------------------------------------------------------------
+  # API skill group: pulls all REST endpoints from the OpenAPI spec
+  # served by the Container App. After v0.8 operationId cleanup, each
+  # endpoint becomes a directly-callable skill named after its
+  # operationId (e.g. `kev_lookup`, `epss_score`, ...).
+  # ------------------------------------------------------------------
+  - Format: API
+    Settings:
+      OpenApiSpecUrl: https://<YOUR-CONTAINER-APP-FQDN>/openapi.json
+
+  # ------------------------------------------------------------------
+  # AGENT skill group: defines reasoning entry points that orchestrate
+  # the API skills above. Each AGENT skill becomes a callable agent
+  # the user can invoke from the Security Copilot home prompt.
+  # ------------------------------------------------------------------
+  - Format: AGENT
+    Skills:
+      - Name: IocEnrichmentAgent
+        DisplayName: IOC Enrichment Agent (SOC Pack)
+        Description: >-
+          Enriches a mixed list of IOCs (IPs, domains, URLs, file
+          hashes) using abuse.ch, AbuseIPDB, OTX and crt.sh. Returns
+          a single consolidated reputation table.
+        Interfaces:
+          - Agent
+        Inputs:
+          - Name: indicators
+            Description: A newline- or comma-separated list of IPv4 / domain / URL / file-hash indicators.
+            Required: true
+        Settings:
+          Model: gpt-4.1
+          Instructions: |
+            <|im_start|>system
+            You are an IOC enrichment agent. The user gives you a mixed
+            list of indicators. For every indicator detect its type:
+            - IPv4 -> call abuseipdb_check, otx_lookup_ipv4, threatfox_search.
+            - Domain -> call threatfox_search and urlhaus_lookup_host.
+              Call crtsh_subdomains ONLY when the user explicitly asks
+              for attack-surface or subdomain information.
+            - URL -> call urlhaus_lookup_url and threatfox_search.
+            - File hash -> call malwarebazaar_lookup, otx_lookup_file
+              and the matching circl_hashlookup_<algo>.
+
+            Output ONE Markdown table:
+            `Indicator | Type | Verdict | Evidence | First/Last seen | Source(s)`.
+
+            Verdict values: malicious / suspicious / benign / unknown.
+            Use `unknown` only when EVERY tool returned no data; do
+            not guess. Cite the source endpoints in the Source column.
+
+            If a skill returns HTTP 503 or 429, surface it inline as
+            `<skill_name>: 503 missing key` rather than dropping the
+            indicator silently.
+            <|im_end|>
+            <|im_start|>user
+            {{indicators}}
+            <|im_end|>
+        ChildSkills:
+          - abuseipdb_check
+          - otx_lookup_ipv4
+          - threatfox_search
+          - urlhaus_lookup_url
+          - urlhaus_lookup_host
+          - malwarebazaar_lookup
+          - otx_lookup_file
+          - circl_hashlookup_md5
+          - circl_hashlookup_sha1
+          - circl_hashlookup_sha256
+          - crtsh_subdomains
+
+      - Name: VulnerabilityTriageAgent
+        DisplayName: Vulnerability Triage Agent (SOC Pack)
+        Description: >-
+          Ranks one or more CVE IDs by exploitation risk using CISA
+          KEV, FIRST EPSS and MITRE ATT&CK mappings, then surfaces
+          MITRE D3FEND defensive techniques per affected ATT&CK id.
+        Interfaces:
+          - Agent
+        Inputs:
+          - Name: cve_ids
+            Description: One or more CVE identifiers (comma- or newline-separated, e.g. CVE-2024-3400).
+            Required: true
+        Settings:
+          Model: gpt-4.1
+          Instructions: |
+            <|im_start|>system
+            For each CVE supplied:
+            1. Call kev_lookup. Capture dateAdded,
+               knownRansomwareCampaignUse, dueDate.
+            2. Call epss_score for the same CVE.
+            3. If a vendor / product is known from the KEV entry,
+               call attack_search to find up to 3 plausible MITRE
+               ATT&CK technique ids.
+            4. For each ATT&CK technique id, call
+               d3fend_defenses_for_attack.
+
+            Assign a priority:
+            - P1: KEV-listed AND EPSS >= 0.5
+            - P2: KEV-listed OR  EPSS >= 0.5
+            - P3: neither
+
+            Output:
+            ## Risk table
+              CVE | Product | KEV? | EPSS | Priority | Due date
+            ## ATT&CK mapping
+              CVE | Technique id | Technique name
+            ## Recommended D3FEND defenses
+              one subsection per defensive tactic, bullet list of
+              up to 5 deduplicated defense labels
+
+            Cite sources inline (per CISA KEV / per FIRST EPSS /
+            per MITRE D3FEND mappings). Never invent data the tools
+            did not return.
+            <|im_end|>
+            <|im_start|>user
+            {{cve_ids}}
+            <|im_end|>
+        ChildSkills:
+          - kev_lookup
+          - kev_search
+          - epss_score
+          - attack_technique
+          - attack_search
+          - d3fend_defenses_for_attack
+
+      - Name: HashTriageAgent
+        DisplayName: Hash Triage Agent (SOC Pack)
+        Description: >-
+          Investigates a single file hash by chaining CIRCL hashlookup
+          (NSRL whitelist), abuse.ch MalwareBazaar (malware corpus)
+          and AlienVault OTX (community pulses). Returns a JSON verdict.
+        Interfaces:
+          - Agent
+        Inputs:
+          - Name: file_hash
+            Description: A single MD5 (32 hex), SHA1 (40 hex) or SHA256 (64 hex) file hash.
+            Required: true
+        Settings:
+          Model: gpt-4.1
+          Instructions: |
+            <|im_start|>system
+            Detect the hash algorithm by length: 32 hex = MD5,
+            40 = SHA1, 64 = SHA256.
+
+            Step 1 -- whitelist check.
+            Call circl_hashlookup_md5 / _sha1 / _sha256 matching the
+            algorithm. If known=true, verdict = "whitelist"; return
+            FileName / ProductCode.ProductName from the response and
+            stop.
+
+            Step 2 -- malware corpus (only if step 1 known=false).
+            Call malwarebazaar_lookup. If a record is returned,
+            verdict = "known malicious"; report family / first_seen /
+            signature.
+
+            Step 3 -- community intel (only if step 2 returned no data).
+            Call otx_lookup_file. If pulses exist, verdict = "suspicious"
+            and list the top 3 pulse names. Otherwise verdict = "unknown".
+
+            Final output is a single JSON code block:
+            {"hash":..., "algo":..., "verdict":..., "evidence":[...], "next_action":...}
+
+            next_action examples: "no action - whitelisted",
+            "isolate host and submit to sandbox",
+            "monitor and re-evaluate".
+            <|im_end|>
+            <|im_start|>user
+            {{file_hash}}
+            <|im_end|>
+        ChildSkills:
+          - circl_hashlookup_md5
+          - circl_hashlookup_sha1
+          - circl_hashlookup_sha256
+          - malwarebazaar_lookup
+          - otx_lookup_file
+
+AgentDefinitions:
+  - Name: IocEnrichmentAgent-v08preview
+    DisplayName: IOC Enrichment Agent (SOC Pack)
+    Description: >-
+      Enriches a mixed list of indicators using free-API SOC enrichment
+      sources and returns a consolidated reputation table.
+    Publisher: copilot-mcp-soc-pack
+    Product: SocPack
+    RequiredSkillsets:
+      - CopilotMcpSocPack.IocTriage-v08preview
+    AgentSingleInstanceConstraint: None
+    Triggers:
+      - Name: Default
+        DefaultPeriodSeconds: 0
+        ProcessSkill: CopilotMcpSocPack.IocTriage-v08preview.IocEnrichmentAgent
+
+  - Name: VulnerabilityTriageAgent-v08preview
+    DisplayName: Vulnerability Triage Agent (SOC Pack)
+    Description: >-
+      Ranks CVEs by exploitation risk (CISA KEV + FIRST EPSS) and
+      surfaces MITRE ATT&CK / D3FEND mappings.
+    Publisher: copilot-mcp-soc-pack
+    Product: SocPack
+    RequiredSkillsets:
+      - CopilotMcpSocPack.IocTriage-v08preview
+    AgentSingleInstanceConstraint: None
+    Triggers:
+      - Name: Default
+        DefaultPeriodSeconds: 0
+        ProcessSkill: CopilotMcpSocPack.IocTriage-v08preview.VulnerabilityTriageAgent
+
+  - Name: HashTriageAgent-v08preview
+    DisplayName: Hash Triage Agent (SOC Pack)
+    Description: >-
+      Investigates a file hash via NSRL whitelist, MalwareBazaar
+      and AlienVault OTX, returning a JSON verdict.
+    Publisher: copilot-mcp-soc-pack
+    Product: SocPack
+    RequiredSkillsets:
+      - CopilotMcpSocPack.IocTriage-v08preview
+    AgentSingleInstanceConstraint: None
+    Triggers:
+      - Name: Default
+        DefaultPeriodSeconds: 0
+        ProcessSkill: CopilotMcpSocPack.IocTriage-v08preview.HashTriageAgent
