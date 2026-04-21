@@ -57,6 +57,9 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+markers = [
+    "eval: live evaluation against a deployed (or local) SOC Pack instance; requires EVAL_TARGET_URL and is skipped by default",
+]
 
 [tool.mypy]
 python_version = "3.12"
