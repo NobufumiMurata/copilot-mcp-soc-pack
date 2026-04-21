@@ -6,6 +6,7 @@
 
 [![Build](https://github.com/NobufumiMurata/copilot-mcp-soc-pack/actions/workflows/build-push.yml/badge.svg)](https://github.com/NobufumiMurata/copilot-mcp-soc-pack/actions/workflows/build-push.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![SafeSkill 92/100](https://img.shields.io/badge/SafeSkill-92%2F100_Verified%20Safe-brightgreen)](https://safeskill.dev/scan/nobufumimurata-copilot-mcp-soc-pack)
 
 > **Status**: **v0.7 Public Preview**. 13 tool groups (30 skills) live across REST + MCP, validated end-to-end against Microsoft Security Copilot. v0.7 expands coverage with OSV.dev (open-source vulnerability lookup), CIRCL hashlookup (NSRL known-good), and MITRE D3FEND (defensive-technique mappings to ATT&CK), and finishes the upstream-retry rollout (every tool now rides out transient 5xx / 429 with full-jitter exponential backoff). Looking for SOC feedback before tagging v1.0 — please open an issue or a discussion. Breaking changes possible until v1.0. Security disclosures: see [SECURITY.md](./SECURITY.md). See [ROADMAP](#roadmap) and [Known limitations](#known-limitations).
 
