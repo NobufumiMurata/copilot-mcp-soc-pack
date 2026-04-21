@@ -158,6 +158,14 @@ These spell out each skill explicitly. Use these when Tier 2 prompts
 fail to chain. They are also the basis for the agents in
 [`sc-plugin/agent.yaml`](../sc-plugin/agent.yaml).
 
+> Agent Builder note (Apr 2026): SC's Agent Builder no longer binds
+> tools automatically when you upload `agent.yaml`. The YAML now serves
+> as a copy-paste source for `description` / `instructions`; tools must
+> be selected via **Configure your agent → Tools → + Add tool** after
+> the Custom plugin is already registered. See the header comment in
+> [`sc-plugin/agent.yaml`](../sc-plugin/agent.yaml) for the full
+> workflow.
+
 ### CVE → Defense (deterministic chain)
 ```
 以下の手順で CVE-2024-3400 のレポートを SOC 向けにまとめてください。

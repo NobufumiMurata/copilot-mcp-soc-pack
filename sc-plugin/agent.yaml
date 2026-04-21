@@ -1,12 +1,29 @@
 # Reference Security Copilot agent definitions.
 #
-# Upload via: Security Copilot -> Build -> My agents -> Upload YAML (or
-# paste the raw GitHub URL of this file). Each top-level entry under
-# `agents:` is a standalone agent definition you can upload individually.
+# >>> IMPORTANT (Apr 2026): Security Copilot's Agent Builder UI was
+# >>> overhauled. Uploading this YAML directly produces the warning:
+# >>>   "No agent tools detected from YAML import"
+# >>> because Agents and Tools are now separate objects: the YAML import
+# >>> populates `description` / `instructions` only, and tool bindings
+# >>> must be added via the UI (Configure your agent -> Tools -> + Add tool).
 #
-# The agent schema is evolving; the shape below mirrors the Security Copilot
-# GitHub samples (https://github.com/Azure/Copilot-For-Security) as of
-# 2026-02. Tweak as needed for your tenant.
+# Recommended workflow today:
+# 1. Make sure the `Copilot MCP SOC Pack` Custom plugin is registered
+#    (Sources -> Manage plugins -> Custom -> Upload file -> manifest.yaml).
+# 2. In Security Copilot, go to Build -> My agents -> Create new agent.
+# 3. Copy the `name`, `description` and `instructions` blocks for the
+#    desired agent below into the corresponding form fields.
+# 4. In the Tools section, click + Add tool and select the listed
+#    `skills` from the Copilot MCP SOC Pack plugin.
+# 5. Add any inputs the instructions reference (e.g. `indicators`,
+#    `cve_id`, `package`).
+# 6. Click Publish.
+#
+# The schema below mirrors the older Security Copilot GitHub samples and
+# is kept here as a single source of truth for agent definitions, so the
+# fields can be copy-pasted into the new UI consistently across tenants.
+# Once SC restores native YAML-driven tool binding this file will be
+# importable as-is again.
 
 agents:
   - name: Vulnerability Triage Agent (SOC Pack)
