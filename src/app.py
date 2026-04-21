@@ -224,9 +224,20 @@ def _custom_openapi() -> dict:
     )
     if not schema.get("components", {}).get("securitySchemes"):
         schema.setdefault("components", {})["securitySchemes"] = {
-            "BearerAuth": {"type": "http", "scheme": "bearer"}
+            # ApiKeyAuth listed first because Microsoft Security Copilot's
+            # MS-schema agent manifest (Descriptor.Authorization Type:
+            # APIKey, Key: X-API-Key, Location: Header) requires a matching
+            # `apiKey` securityScheme in the OpenAPI spec for the API
+            # SkillGroup import step to succeed. Without it the import
+            # silently fails ("Failed to import OpenAPI spec") and any
+            # AGENT skills referencing the resulting tools fail to publish
+            # with "Invalid references: ...".
+            "ApiKeyAuth": {"type": "apiKey", "in": "header", "name": "X-API-Key"},
+            # BearerAuth retained for the older Custom plugin upload path
+            # and any non-SC clients that prefer Authorization: Bearer.
+            "BearerAuth": {"type": "http", "scheme": "bearer"},
         }
-        schema["security"] = [{"BearerAuth": []}]
+        schema["security"] = [{"ApiKeyAuth": []}, {"BearerAuth": []}]
     downgrade_to_3_0_1(schema)
     app.openapi_schema = schema
     return schema
