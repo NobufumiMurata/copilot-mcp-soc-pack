@@ -172,11 +172,24 @@ For ready-to-paste validation prompts (single-skill smoke tests, planner-driven
 composite flows, and deterministic agent-style chains for v0.7 tools) see the
 [Promptbook](./docs/promptbook.md).
 
-> **Coming in v0.8**: a one-shot **Build → My agents → Upload YAML** flow using
-> the official Microsoft [Agent Manifest schema](https://learn.microsoft.com/en-us/copilot/security/developer/agent-manifest)
-> (Descriptor / SkillGroups / AgentDefinitions) — see the preview manifest at
-> [`sc-plugin/msschema/manifest.yaml`](./sc-plugin/msschema/manifest.yaml) and
-> the migration plan in [`docs/v0.8-msschema-migration.md`](./docs/v0.8-msschema-migration.md).
+> **Reference (non-recommended): Build → My agents → Upload YAML.**
+> The official Microsoft [Agent Manifest schema](https://learn.microsoft.com/en-us/copilot/security/developer/agent-manifest)
+> (Descriptor / SkillGroups / AgentDefinitions) is supported by the
+> sample manifest at [`sc-plugin/msschema/manifest.yaml`](./sc-plugin/msschema/manifest.yaml).
+> Upload works end-to-end and the agents publish & run, but the Security
+> Copilot standalone planner currently calls only one ChildSkill per
+> invocation, so the runtime experience is markedly weaker than the MCP
+> path described below. The manifest is retained as a reference
+> implementation; see the file header for details and the migration
+> notes in [`docs/v0.8-msschema-migration.md`](./docs/v0.8-msschema-migration.md).
+>
+> **Recommended: use the SOC Pack as an MCP server.** The same
+> Container App also exposes Streamable-HTTP MCP at `/mcp/`. Point any
+> modern agentic client (VS Code Copilot Chat in Agent Mode, Claude
+> Desktop, Cline, …) at it via the sample configs in
+> [`mcp-client-config/`](./mcp-client-config/). Those clients run on
+> Claude Sonnet / GPT-4-class models with proper multi-tool planning
+> and produce significantly better triage output from the same toolset.
 
 ### Verify the deployment
 
