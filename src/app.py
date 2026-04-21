@@ -84,10 +84,52 @@ def _resolve_cors_origins() -> list[str]:
     return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 
+# --- MCP server --------------------------------------------------------------
+# FastMCP mounts a Streamable-HTTP transport at /mcp/. Each @mcp.tool wraps the
+# same async function that the REST router exposes, so we maintain one source
+# of truth per capability.
+#
+# We build the MCP server (and its ASGI sub-app) BEFORE the FastAPI app so that
+# the FastAPI lifespan can delegate to the FastMCP sub-app's lifespan, which is
+# required by FastMCP 3.x to initialise the internal anyio task group used by
+# the Streamable-HTTP transport.
+mcp = FastMCP(name="copilot-mcp-soc-pack")
+
+kev.register_mcp_tools(mcp)
+epss.register_mcp_tools(mcp)
+attack.register_mcp_tools(mcp)
+crtsh.register_mcp_tools(mcp)
+ransomwarelive.register_mcp_tools(mcp)
+hibp.register_mcp_tools(mcp)
+osv.register_mcp_tools(mcp)
+circl_hashlookup.register_mcp_tools(mcp)
+d3fend.register_mcp_tools(mcp)
+
+_KEY_GATED_TOOLS: list[tuple[str, str, Any]] = [
+    ("GREYNOISE_API_KEY", "greynoise", greynoise),
+    ("ABUSEIPDB_API_KEY", "abuseipdb", abuseipdb),
+    ("ABUSE_CH_AUTH_KEY", "abusech (MalwareBazaar / ThreatFox / URLhaus)", abusech),
+    ("OTX_API_KEY", "otx", otx),
+]
+
+for _env_var, _label, _module in _KEY_GATED_TOOLS:
+    if os.environ.get(_env_var):
+        _module.register_mcp_tools(mcp)
+
+# FastMCP 3.x exposes its Streamable-HTTP endpoint at the path given by the
+# `path` argument of `http_app()` (default `/mcp`). Mounting that sub-app at
+# `/mcp` would therefore expose the public endpoint at `/mcp/mcp`. We override
+# the internal path to `/` so the public endpoint stays at `/mcp/`.
+_mcp_app = mcp.http_app(path="/")
+
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
-    # Place for warmup hooks (e.g. pre-fetch KEV/ATT&CK caches) in future iterations.
-    yield
+    # Forward the FastMCP sub-app lifespan so its internal anyio task group is
+    # initialised. Without this, POST /mcp/ raises
+    # "RuntimeError: Task group is not initialized".
+    async with _mcp_app.lifespan(app):
+        yield
 
 
 # --- OpenAPI operationId clean-up --------------------------------------------
@@ -269,13 +311,6 @@ import logging as _logging  # noqa: E402
 
 _app_log = _logging.getLogger(__name__)
 
-_KEY_GATED_TOOLS: list[tuple[str, str, Any]] = [
-    ("GREYNOISE_API_KEY", "greynoise", greynoise),
-    ("ABUSEIPDB_API_KEY", "abuseipdb", abuseipdb),
-    ("ABUSE_CH_AUTH_KEY", "abusech (MalwareBazaar / ThreatFox / URLhaus)", abusech),
-    ("OTX_API_KEY", "otx", otx),
-]
-
 app.include_router(kev.router, dependencies=[Depends(_require_api_key)])
 app.include_router(epss.router, dependencies=[Depends(_require_api_key)])
 app.include_router(attack.router, dependencies=[Depends(_require_api_key)])
@@ -297,24 +332,6 @@ for _env_var, _label, _module in _KEY_GATED_TOOLS:
         )
 
 
-# --- MCP server --------------------------------------------------------------
-# FastMCP mounts a Streamable-HTTP transport at /mcp/. Each @mcp.tool wraps the
-# same async function that the REST router exposes, so we maintain one source
-# of truth per capability.
-mcp = FastMCP(name="copilot-mcp-soc-pack")
-
-kev.register_mcp_tools(mcp)
-epss.register_mcp_tools(mcp)
-attack.register_mcp_tools(mcp)
-crtsh.register_mcp_tools(mcp)
-ransomwarelive.register_mcp_tools(mcp)
-hibp.register_mcp_tools(mcp)
-osv.register_mcp_tools(mcp)
-circl_hashlookup.register_mcp_tools(mcp)
-d3fend.register_mcp_tools(mcp)
-
-for _env_var, _label, _module in _KEY_GATED_TOOLS:
-    if os.environ.get(_env_var):
-        _module.register_mcp_tools(mcp)
-
-app.mount("/mcp", mcp.http_app())
+# Mount the pre-built FastMCP sub-app. See the lifespan / MCP setup block at
+# the top of this module for the path-override rationale.
+app.mount("/mcp", _mcp_app)
