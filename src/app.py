@@ -238,6 +238,17 @@ def _custom_openapi() -> dict:
             "BearerAuth": {"type": "http", "scheme": "bearer"},
         }
         schema["security"] = [{"ApiKeyAuth": []}, {"BearerAuth": []}]
+    # Security Copilot's Agent Builder API Tool importer requires a
+    # `servers[]` block in the OpenAPI spec to resolve the base URL of
+    # each operation. The legacy Custom plugin upload path tolerated a
+    # missing `servers` because the manifest carried `EndpointUrl`, but
+    # the new UI does not consult the manifest's EndpointUrl during
+    # import and surfaces "Failed to import OpenAPI spec" instead.
+    # Operators self-hosting on a different FQDN can override this via
+    # the MCP_SOC_PACK_PUBLIC_BASE_URL env var.
+    public_base_url = os.environ.get("MCP_SOC_PACK_PUBLIC_BASE_URL", "").strip().rstrip("/")
+    if public_base_url and "servers" not in schema:
+        schema["servers"] = [{"url": public_base_url}]
     downgrade_to_3_0_1(schema)
     app.openapi_schema = schema
     return schema

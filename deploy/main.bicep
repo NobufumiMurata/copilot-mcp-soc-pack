@@ -160,6 +160,17 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
                 name: 'OTX_API_KEY'
                 secretRef: 'otx-api-key'
               }
+            ],
+            // Public base URL injected into the OpenAPI `servers[]` block.
+            // Required for Microsoft Security Copilot's Agent Builder
+            // API Tool importer to resolve operation base URLs (the
+            // legacy Custom plugin path uses the manifest's EndpointUrl
+            // instead and works without this).
+            [
+              {
+                name: 'MCP_SOC_PACK_PUBLIC_BASE_URL'
+                value: 'https://${containerAppName}.${environment.properties.defaultDomain}'
+              }
             ]
           )
           probes: [
