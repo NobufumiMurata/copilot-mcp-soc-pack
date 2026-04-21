@@ -35,16 +35,17 @@ One `Deploy to Azure` click → Container Apps (scale-to-zero, < $5/month idle) 
 | `otx_lookup_ipv4` / `_ipv6` / `_domain` / `_file` / `_url` | [AlienVault OTX](https://otx.alienvault.com/) | Free key | Community threat-intel pulses for any indicator | No |
 | `hibp_breaches_by_domain` / `hibp_breach` | [Have I Been Pwned](https://haveibeenpwned.com/) | No | Public data-breach exposure for a domain | No |
 | `osv_query_package` / `osv_query_commit` / `osv_get_vuln` | [OSV.dev](https://osv.dev/) | No | Open source vulnerability lookup across PyPI / npm / Go / Maven / crates.io / RubyGems / NuGet / etc. | No |
-| `circl_hashlookup_md5` / `_sha1` / `_sha256` | [CIRCL hashlookup](https://hashlookup.circl.lu/) | No | NSRL known-good file lookup (whitelisting / triage) | No |
+| `circl_hashlookup_md5` / `_sha1` / `_sha256` | [CIRCL hashlookup](https://hashlookup.circl.lu/) | No | NSRL known-good file lookup (whitelisting / triage) | **Yes** — `CIRCL Hash Lookup (Preview)` built into Security Copilot Sources |
 | `d3fend_defenses_for_attack` / `d3fend_attacks_for_defense` | [MITRE D3FEND](https://d3fend.mitre.org/) | No | Defensive-technique mappings against MITRE ATT&CK | No |
 
-> **Why implement GreyNoise and AbuseIPDB anyway?** Microsoft ships official
-> plugins for both. Keeping the implementations here gives SOC teams a single
-> OSS bundle that works outside Security Copilot (VS Code / Claude Desktop via
-> MCP, or plain `curl`) without mixing vendor-managed plugins and
-> customer-managed ones. If you only use Security Copilot, feel free to
-> disable the `greynoise_classify` and `abuseipdb_check` tools in your
-> plugin configuration and use the first-party plugins instead.
+> **Why implement GreyNoise, AbuseIPDB, and CIRCL hashlookup anyway?** Microsoft
+> ships official plugins for all three. Keeping the implementations here gives
+> SOC teams a single OSS bundle that works outside Security Copilot (VS Code /
+> Claude Desktop via MCP, or plain `curl`) without mixing vendor-managed
+> plugins and customer-managed ones. If you only use Security Copilot, feel
+> free to disable the `greynoise_classify`, `abuseipdb_check`, and
+> `circl_hashlookup_*` tools in your plugin configuration and use the
+> first-party plugins instead.
 
 **Currently implemented in v0.7**: KEV + EPSS + ATT&CK (v0.1) · Abuse.ch Pack (v0.2) · IP & Domain Reputation (v0.3, GreyNoise / AbuseIPDB / crt.sh) · ransomware.live (v0.4, recent/by_group/by_country/groups) · AlienVault OTX + Have I Been Pwned (v0.5) · reliability hardening + per-tool tests + Dependabot (v0.6) · OSV.dev + CIRCL hashlookup + MITRE D3FEND (v0.7).
 
