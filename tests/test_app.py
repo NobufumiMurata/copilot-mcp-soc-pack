@@ -276,3 +276,48 @@ def test_openapi_no_servers_when_env_unset(monkeypatch):
         assert "servers" not in schema
     finally:
         importlib.reload(app_module)
+
+
+def test_mcp_endpoint_initialize_returns_200():
+    """Regression test for MCP /mcp/ endpoint.
+
+    FastMCP 3.x exposes its Streamable-HTTP transport at the path given by
+    `http_app(path=...)` (default `/mcp`). Mounting the sub-app at `/mcp`
+    therefore double-prefixed the public path to `/mcp/mcp` and broke every
+    MCP client (VS Code, Claude Desktop, mcp-remote). Additionally, the
+    sub-app's lifespan must be forwarded by the FastAPI lifespan, otherwise
+    the internal anyio task group is never initialised and POST /mcp/ raises
+    `RuntimeError: Task group is not initialized`.
+
+    This test exercises the end-to-end flow against the live mounted app.
+    """
+    # Reload to get a fresh FastMCP instance — other tests in this file use
+    # `importlib.reload(src.app)` to flip env vars, which leaves the
+    # module-level `app` object pointing at a stale FastMCP whose anyio task
+    # group can no longer be started.
+    import importlib
+
+    from src import app as app_module
+
+    importlib.reload(app_module)
+    with TestClient(app_module.app) as client:
+        response = client.post(
+            "/mcp/",
+            json={
+                "jsonrpc": "2.0",
+                "method": "initialize",
+                "id": 1,
+                "params": {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {},
+                    "clientInfo": {"name": "pytest", "version": "1"},
+                },
+            },
+            headers={"Accept": "application/json, text/event-stream"},
+        )
+    assert response.status_code == 200, response.text
+    # Streamable-HTTP returns SSE; the JSON-RPC payload is on the `data:` line.
+    body = response.text
+    assert '"jsonrpc":"2.0"' in body
+    assert '"serverInfo"' in body
+    assert "copilot-mcp-soc-pack" in body
