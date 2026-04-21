@@ -158,13 +158,16 @@ These spell out each skill explicitly. Use these when Tier 2 prompts
 fail to chain. They are also the basis for the agents in
 [`sc-plugin/agent.yaml`](../sc-plugin/agent.yaml).
 
-> Agent Builder note (Apr 2026): SC's Agent Builder no longer binds
-> tools automatically when you upload `agent.yaml`. The YAML now serves
-> as a copy-paste source for `description` / `instructions`; tools must
-> be selected via **Configure your agent → Tools → + Add tool** after
-> the Custom plugin is already registered. See the header comment in
-> [`sc-plugin/agent.yaml`](../sc-plugin/agent.yaml) for the full
-> workflow.
+> Agent Builder note (Apr 2026): the YAML in `sc-plugin/agent.yaml` is
+> a **legacy community shape** and is not compatible with the current
+> Microsoft agent manifest schema documented at
+> [Agent Manifest reference](https://learn.microsoft.com/en-us/copilot/security/developer/agent-manifest)
+> (`Descriptor` / `SkillGroups` / `AgentDefinitions`). Direct YAML import
+> therefore surfaces "No agent tools detected from YAML import". Use it
+> as a copy-paste source for `description` / `instructions`, and bind
+> tools manually via **Configure your agent → Tools → + Add tool**
+> after the Custom plugin is already registered. A v0.8 migration to
+> the official MS schema is planned.
 
 ### CVE → Defense (deterministic chain)
 ```

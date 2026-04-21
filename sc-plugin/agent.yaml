@@ -1,13 +1,22 @@
 # Reference Security Copilot agent definitions.
 #
-# >>> IMPORTANT (Apr 2026): Security Copilot's Agent Builder UI was
-# >>> overhauled. Uploading this YAML directly produces the warning:
-# >>>   "No agent tools detected from YAML import"
-# >>> because Agents and Tools are now separate objects: the YAML import
-# >>> populates `description` / `instructions` only, and tool bindings
-# >>> must be added via the UI (Configure your agent -> Tools -> + Add tool).
+# >>> SCHEMA STATUS (Apr 2026): The structure below (agents[].plugins[].skills)
+# >>> is a LEGACY / community shape inherited from earlier Security Copilot
+# >>> samples. It is NOT compatible with Microsoft's current published agent
+# >>> manifest schema, which uses three top-level keys:
+# >>>   Descriptor / SkillGroups / AgentDefinitions
+# >>> Reference: https://learn.microsoft.com/en-us/copilot/security/developer/agent-manifest
+# >>>
+# >>> Consequence: uploading this YAML directly to the Agent Builder UI
+# >>> produces "No agent tools detected from YAML import". The YAML import
+# >>> only populates `description` / `instructions`; tool bindings must be
+# >>> added via the UI.
+# >>>
+# >>> A future v0.8 release will provide a parallel set of manifests in the
+# >>> official MS schema (tracked separately) so YAML import can bind tools
+# >>> in one shot.
 #
-# Recommended workflow today:
+# Recommended workflow today (Custom plugin + manual agent assembly):
 # 1. Make sure the `Copilot MCP SOC Pack` Custom plugin is registered
 #    (Sources -> Manage plugins -> Custom -> Upload file -> manifest.yaml).
 # 2. In Security Copilot, go to Build -> My agents -> Create new agent.
@@ -19,11 +28,9 @@
 #    `cve_id`, `package`).
 # 6. Click Publish.
 #
-# The schema below mirrors the older Security Copilot GitHub samples and
-# is kept here as a single source of truth for agent definitions, so the
-# fields can be copy-pasted into the new UI consistently across tenants.
-# Once SC restores native YAML-driven tool binding this file will be
-# importable as-is again.
+# The schema below is kept here as a single source of truth for agent
+# definitions, so the fields can be copy-pasted into the new UI consistently
+# across tenants while the v0.8 MS-schema migration is in progress.
 
 agents:
   - name: Vulnerability Triage Agent (SOC Pack)
