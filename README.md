@@ -47,7 +47,7 @@ One `Deploy to Azure` click → Container Apps (scale-to-zero, < $5/month idle) 
 > `circl_hashlookup_*` tools in your plugin configuration and use the
 > first-party plugins instead.
 
-**Currently implemented in v0.7**: KEV + EPSS + ATT&CK (v0.1) · Abuse.ch Pack (v0.2) · IP & Domain Reputation (v0.3, GreyNoise / AbuseIPDB / crt.sh) · ransomware.live (v0.4, recent/by_group/by_country/groups) · AlienVault OTX + Have I Been Pwned (v0.5) · reliability hardening + per-tool tests + Dependabot (v0.6) · OSV.dev + CIRCL hashlookup + MITRE D3FEND (v0.7).
+**Currently implemented in v0.8**: KEV + EPSS + ATT&CK (v0.1) · Abuse.ch Pack (v0.2) · IP & Domain Reputation (v0.3, GreyNoise / AbuseIPDB / crt.sh) · ransomware.live (v0.4, recent/by_group/by_country/groups) · AlienVault OTX + Have I Been Pwned (v0.5) · reliability hardening + per-tool tests + Dependabot (v0.6) · OSV.dev + CIRCL hashlookup + MITRE D3FEND (v0.7) · Promptbook + live eval harness + opt-in Application Insights tracing (v0.8).
 
 ### Optional environment variables
 
@@ -248,7 +248,7 @@ This is a **Public Preview**. The following are intentional gaps today; PRs and 
 - **`/health` and `/openapi.json` are intentionally un-authenticated** to support Container App probes and OpenAPI ingestion. Restrict ingress (Front Door, IP allow-list, private endpoint) if this is unacceptable.
 - **OpenAPI is downgraded to 3.0.1 at runtime.** Microsoft Security Copilot rejects 3.1; downstream tools that rely on 3.1 features should consume the FastAPI source instead of `/openapi.json`.
 - **No Sentinel Workbook / Foundry agent sample bundled yet.** Planned for v0.8+.
-- **Breaking changes possible until v1.0.** Pin the container image to a semver tag (`:0.7.0`), not `:latest`, and watch the release notes.
+- **Breaking changes possible until v1.0.** Pin the container image to a semver tag (`:0.8.0`), not `:latest`, and watch the release notes.
 
 ## Contributing
 
