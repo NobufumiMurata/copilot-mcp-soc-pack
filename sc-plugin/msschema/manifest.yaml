@@ -65,8 +65,8 @@ SkillGroups:
           - Agent
         Inputs:
           - Name: indicators
-            Description: A newline- or comma-separated list of IPv4 / domain / URL / file-hash indicators.
-            Required: true
+            Description: Optional. A newline- or comma-separated list of IPv4 / domain / URL / file-hash indicators.
+            Required: false
         Settings:
           Model: gpt-4.1
           Instructions: |
@@ -87,6 +87,11 @@ SkillGroups:
             Verdict values: malicious / suspicious / benign / unknown.
             Use `unknown` only when EVERY tool returned no data; do
             not guess. Cite the source endpoints in the Source column.
+
+            If the structured `indicators` input is empty, infer
+            indicators from the latest user message in chat context.
+            If still none are available, ask the user to provide one or
+            more indicators and stop.
 
             If a skill returns HTTP 503 or 429, surface it inline as
             `<skill_name>: 503 missing key` rather than dropping the
@@ -118,12 +123,16 @@ SkillGroups:
           - Agent
         Inputs:
           - Name: cve_ids
-            Description: One or more CVE identifiers (comma- or newline-separated, e.g. CVE-2024-3400).
-            Required: true
+            Description: Optional. One or more CVE identifiers (comma- or newline-separated, e.g. CVE-2024-3400).
+            Required: false
         Settings:
           Model: gpt-4.1
           Instructions: |
             <|im_start|>system
+            If the structured `cve_ids` input is empty, infer CVE IDs
+            from the latest user message in chat context. If no CVE is
+            found, ask the user to provide one or more CVE IDs and stop.
+
             For each CVE supplied:
             1. Call kev_lookup. Capture dateAdded,
                knownRansomwareCampaignUse, dueDate.
@@ -173,12 +182,16 @@ SkillGroups:
           - Agent
         Inputs:
           - Name: file_hash
-            Description: A single MD5 (32 hex), SHA1 (40 hex) or SHA256 (64 hex) file hash.
-            Required: true
+            Description: Optional. A single MD5 (32 hex), SHA1 (40 hex) or SHA256 (64 hex) file hash.
+            Required: false
         Settings:
           Model: gpt-4.1
           Instructions: |
             <|im_start|>system
+            If the structured `file_hash` input is empty, infer a hash
+            from the latest user message in chat context. If no hash is
+            found, ask the user to provide one hash and stop.
+
             Detect the hash algorithm by length: 32 hex = MD5,
             40 = SHA1, 64 = SHA256.
 
