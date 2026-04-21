@@ -13,7 +13,7 @@ WORKDIR /app
 COPY pyproject.toml README.md LICENSE ./
 COPY src ./src
 
-RUN pip install --upgrade pip && pip install .
+RUN pip install --upgrade pip && pip install ".[tracing]"
 
 # Create non-root user.
 RUN useradd --create-home --uid 10001 appuser

@@ -60,6 +60,8 @@ One `Deploy to Azure` click → Container Apps (scale-to-zero, < $5/month idle) 
 | `GREYNOISE_API_KEY` | `/greynoise/*` | Free Community key from <https://viz.greynoise.io/signup> → *Account → API Key*. Required for GreyNoise classification. |
 | `ABUSEIPDB_API_KEY` | `/abuseipdb/*` | Free key from <https://www.abuseipdb.com/register> → *API → Create Key* (1000 req/day). Required for AbuseIPDB checks. |
 | `OTX_API_KEY` | `/otx/*` | Free key from <https://otx.alienvault.com/> → *Settings → API Integration*. Required for AlienVault OTX indicator lookups. |
+| `APPLICATIONINSIGHTS_CONNECTION_STRING` | All routes (tracing) | Optional. When set, the app initialises [Azure Monitor OpenTelemetry](https://learn.microsoft.com/azure/azure-monitor/app/opentelemetry-enable?tabs=python) and ships FastAPI / `httpx` / logging spans to Application Insights. Leave unset to keep the stack fully offline. The Bicep template can provision an App Insights resource and inject this automatically — pass `enableAppInsights=true`. |
+| `OTEL_SERVICE_NAME` | Tracing | Optional override for the OpenTelemetry `service.name` resource attribute. Defaults to `copilot-mcp-soc-pack`. |
 
 > **Conditional registration**: Tools requiring an upstream key
 > (`abusech`, `greynoise`, `abuseipdb`, `otx`) are registered **only**
@@ -232,7 +234,7 @@ See [mcp-client-config/](./mcp-client-config/) for ready-to-use configurations.
 - [x] v0.5 AlienVault OTX + Have I Been Pwned, smoke harness, `#ExamplePrompts` planner hints, **Public Preview**
 - [x] v0.6 Reliability hardening (httpx retries with backoff, LRU-bounded TTL cache, `/ready` probe), per-tool unit tests, mypy in CI, Dependabot, single-source version, PR-based workflow
 - [x] v0.7 OSV.dev + CIRCL hashlookup + MITRE D3FEND, full upstream-retry coverage across every tool, codified `request_with_retry` convention
-- [ ] v0.8 Promptbook samples, structured eval harness, Application Insights tracing
+- [x] v0.8 Promptbook samples ([docs/promptbook.md](./docs/promptbook.md)), structured live eval harness ([docs/eval.md](./docs/eval.md)), opt-in Application Insights tracing (`APPLICATIONINSIGHTS_CONNECTION_STRING` + Bicep `enableAppInsights`)
 - [ ] v1.0 Hardening (Managed Identity inbound, custom metrics, Sentinel Workbook), GA based on Preview feedback
 
 ## Known limitations
@@ -242,7 +244,7 @@ This is a **Public Preview**. The following are intentional gaps today; PRs and 
 - **Inbound auth is API key only.** No Managed Identity, no Entra ID inbound, no per-caller RBAC. Rotate the shared `MCP_SOC_PACK_API_KEY` regularly.
 - **In-memory TTL cache only.** Cache resets on every cold start (which is expected at scale-to-zero). v0.6 added an LRU eviction cap (default 1024 entries) so long-running replicas no longer leak memory; there is still no Redis or shared cache across replicas.
 - **Single region.** The `Deploy to Azure` button provisions one Container Apps environment. There is no multi-region active-active sample yet.
-- **Observability is logs only.** Container App logs land in a Log Analytics workspace; there are no custom metrics, traces, or a Workbook yet.
+- **Observability ships logs + opt-in traces.** Container App logs land in a Log Analytics workspace. Application Insights distributed tracing is opt-in via `APPLICATIONINSIGHTS_CONNECTION_STRING` (or the Bicep `enableAppInsights=true` switch). There are no custom metrics or a packaged Sentinel Workbook yet.
 - **`/health` and `/openapi.json` are intentionally un-authenticated** to support Container App probes and OpenAPI ingestion. Restrict ingress (Front Door, IP allow-list, private endpoint) if this is unacceptable.
 - **OpenAPI is downgraded to 3.0.1 at runtime.** Microsoft Security Copilot rejects 3.1; downstream tools that rely on 3.1 features should consume the FastAPI source instead of `/openapi.json`.
 - **No Sentinel Workbook / Foundry agent sample bundled yet.** Planned for v0.8+.
