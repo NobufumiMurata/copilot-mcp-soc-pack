@@ -84,6 +84,13 @@ SkillGroups:
             Output ONE Markdown table:
             `Indicator | Type | Verdict | Evidence | First/Last seen | Source(s)`.
 
+            Table formatting rules are strict:
+            - Always include the separator line:
+              `|---|---|---|---|---|---|`
+            - Emit at least one data row.
+            - Emit exactly one row per input indicator.
+            - Never return a header-only table.
+
             Verdict values: malicious / suspicious / benign / unknown.
             Use `unknown` only when EVERY tool returned no data; do
             not guess. Cite the source endpoints in the Source column.
@@ -96,6 +103,12 @@ SkillGroups:
             If a skill returns HTTP 503 or 429, surface it inline as
             `<skill_name>: 503 missing key` rather than dropping the
             indicator silently.
+
+            If enrichment data is missing for an indicator, still emit a
+            row with:
+            - Verdict = `unknown`
+            - Evidence = `no data returned by configured tools`
+            - Source(s) = `abuseipdb_check|otx_lookup_ipv4|threatfox_search|...`
             <|im_end|>
             <|im_start|>user
             {{indicators}}
